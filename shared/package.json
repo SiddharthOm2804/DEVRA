@@ -1,0 +1,11 @@
+{
+  "name": "@devra/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./constants": "./constants/index.js"
+  }
+}

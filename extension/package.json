@@ -1,0 +1,127 @@
+{
+  "name": "devpilot-vscode",
+  "displayName": "DevPilot - AI Developer Assistant",
+  "description": "VS Code extension for DevPilot Codebase Intelligence, AST Code Review, and Refactoring",
+  "version": "0.1.0",
+  "publisher": "devpilot",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "AI",
+    "Linters",
+    "Testing"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "devpilot-sidebar",
+          "title": "DevPilot",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "devpilot-sidebar": [
+        {
+          "type": "webview",
+          "id": "devpilot.sidebarView",
+          "name": "DevPilot Assistant"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "devpilot.explainCode",
+        "title": "DevPilot: Explain Selected Code",
+        "category": "DevPilot"
+      },
+      {
+        "command": "devpilot.reviewCode",
+        "title": "DevPilot: Review Selected Code",
+        "category": "DevPilot"
+      },
+      {
+        "command": "devpilot.refactorCode",
+        "title": "DevPilot: Refactor Selected Code",
+        "category": "DevPilot"
+      },
+      {
+        "command": "devpilot.generateTests",
+        "title": "DevPilot: Generate Tests",
+        "category": "DevPilot"
+      },
+      {
+        "command": "devpilot.agentMode",
+        "title": "DevPilot: AI Agent Mode (Plan & Implement)",
+        "category": "DevPilot"
+      },
+      {
+        "command": "devpilot.openChat",
+        "title": "DevPilot: Open Codebase Chat",
+        "category": "DevPilot"
+      },
+      {
+        "command": "devpilot.status",
+        "title": "DevPilot: Check Backend Status",
+        "category": "DevPilot"
+      },
+      {
+        "command": "devpilot.setToken",
+        "title": "DevPilot: Set Auth Token",
+        "category": "DevPilot"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "devpilot.agentMode",
+          "group": "devpilot@0"
+        },
+        {
+          "command": "devpilot.explainCode",
+          "when": "editorHasSelection",
+          "group": "devpilot@1"
+        },
+        {
+          "command": "devpilot.reviewCode",
+          "group": "devpilot@2"
+        },
+        {
+          "command": "devpilot.refactorCode",
+          "when": "editorHasSelection",
+          "group": "devpilot@3"
+        },
+        {
+          "command": "devpilot.generateTests",
+          "when": "editorHasSelection",
+          "group": "devpilot@4"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "DevPilot Configuration",
+      "properties": {
+        "devpilot.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:5000",
+          "description": "Backend API URL for DevPilot services"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "echo \"Linting extension (placeholder)\""
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.7.3"
+  }
+}

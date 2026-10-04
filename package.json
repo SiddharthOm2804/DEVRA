@@ -1,0 +1,36 @@
+{
+  "name": "devra-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Devra - AI-powered developer platform with MERN stack, 3D codebase visualization, and VS Code extension",
+  "workspaces": [
+    "client",
+    "server",
+    "extension",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\" --names \"SERVER,CLIENT\" --prefix-colors \"blue,green\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev:extension": "npm --prefix extension run watch",
+    "build": "npm run build:server && npm run build:client && npm run build:extension",
+    "build:server": "echo \"Server ready (no build step required for Node.js)\"",
+    "build:client": "npm --prefix client run build",
+    "build:extension": "npm --prefix extension run compile",
+    "start": "npm --prefix server start",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install && npm --prefix extension install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "keywords": [
+    "devra",
+    "ai",
+    "developer-platform",
+    "code-analysis",
+    "monorepo"
+  ],
+  "author": "Devra Team",
+  "license": "MIT"
+}

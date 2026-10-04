@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: devpilot-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - devpilot-data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=devra
+    networks:
+      - devpilot-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: devpilot-api
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/devra
+      - CLIENT_URL=http://localhost:80
+      - JWT_SECRET=${JWT_SECRET:-devpilot_production_jwt_secret_32chars_key!}
+      - AI_PROVIDER=${AI_PROVIDER:-gemini}
+      - AI_API_KEY=${AI_API_KEY:-}
+    depends_on:
+      - mongodb
+    networks:
+      - devpilot-network
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: devpilot-web
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    networks:
+      - devpilot-network
+
+volumes:
+  devpilot-data:
+    driver: local
+
+networks:
+  devpilot-network:
+    driver: bridge
