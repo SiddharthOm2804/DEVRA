@@ -1,4 +1,5 @@
 export const APP_NAME = "Devra";
+export const APP_NAME_ALT = "DevPilot";
 export const API_VERSION = "v1";
 
 export const DEFAULT_SERVER_PORT = 5000;
@@ -10,7 +11,8 @@ export const API_ENDPOINTS = {
   REPOSITORIES: "/api/repositories",
   ANALYSIS: "/api/analysis",
   REVIEWS: "/api/reviews",
-  CHAT: "/api/chat"
+  CHAT: "/api/chat",
+  AGENT: "/api/agent"
 };
 
 export const HTTP_STATUS = {
