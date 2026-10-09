@@ -390,5 +390,72 @@ export class ApiService {
     await this.ensureAuthenticated();
     return this.request<AgentSessionResponse>(`/api/agent/${sessionId}`, "GET");
   }
+
+  /**
+   * AI AGENT MODE: Stream real-time task progress events via Server-Sent Events (SSE)
+   */
+  public streamAgentEvents(
+    sessionId: string,
+    onEvent: (event: any) => void,
+    onError?: (err: Error) => void
+  ): () => void {
+    let req: http.ClientRequest | null = null;
+    let isDestroyed = false;
+
+    this.getToken().then((token) => {
+      if (isDestroyed) return;
+      const baseUrl = this.getApiUrl().replace(/\/$/, "");
+      const endpoint = `/api/agent/tasks/${sessionId}/events?token=${encodeURIComponent(token)}`;
+      const fullUrl = new URL(`${baseUrl}${endpoint}`);
+      const transport = fullUrl.protocol === "https:" ? https : http;
+
+      req = transport.get(
+        fullUrl.toString(),
+        {
+          headers: {
+            Accept: "text/event-stream",
+            Authorization: `Bearer ${token}`
+          }
+        },
+        (res) => {
+          let buffer = "";
+
+          res.on("data", (chunk: Buffer) => {
+            buffer += chunk.toString("utf8");
+            const lines = buffer.split("\n\n");
+            buffer = lines.pop() || "";
+
+            for (const block of lines) {
+              if (!block.trim()) continue;
+              const dataLine = block.split("\n").find((l) => l.startsWith("data:"));
+              if (dataLine) {
+                try {
+                  const parsed = JSON.parse(dataLine.replace(/^data:\s*/, ""));
+                  onEvent(parsed);
+                } catch (_) {}
+              }
+            }
+          });
+
+          res.on("error", (err) => {
+            if (onError) onError(err);
+          });
+        }
+      );
+
+      req.on("error", (err) => {
+        if (onError) onError(err);
+      });
+    }).catch((err) => {
+      if (onError) onError(err);
+    });
+
+    return () => {
+      isDestroyed = true;
+      if (req) {
+        req.destroy();
+      }
+    };
+  }
 }
 

@@ -5,7 +5,7 @@ import { isRedisAvailable } from "../../config/redis.js";
 import logger from "../../utils/logger.js";
 import { createEvent, EVENT_TYPES } from "./eventContract.js";
 
-class RealtimeEventBus {
+export class RealtimeEventBus {
   constructor() {
     this.emitter = new EventEmitter();
     this.emitter.setMaxListeners(200); // Allow multiple concurrent SSE client connections

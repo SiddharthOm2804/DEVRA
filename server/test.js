@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import { shouldIgnorePath, detectLanguage, detectEntryPoint } from "./src/services/codeAnalysisService.js";
 import { generateUnifiedDiff, validateProposedCodeSafeguards } from "./src/services/agentService.js";
 import { runVectorStoreTests } from "./tests/vectorStore.test.js";
+import { runRealtimeStreamingTests } from "./tests/realtimeStreaming.test.js";
+import { eventBus } from "./src/services/realtime/eventBus.js";
 
 async function runTests() {
   console.log("=========================================");
@@ -124,12 +126,21 @@ async function runTests() {
   passed += vsResults.passed;
   failed += vsResults.failed;
 
+  // Run Realtime Streaming (SSE) test suite
+  const streamResults = await runRealtimeStreamingTests();
+  passed += streamResults.passed;
+  failed += streamResults.failed;
+
+  await eventBus.close();
+
   console.log("\n-----------------------------------------");
   console.log(`Total Results: ${passed} passed, ${failed} failed.`);
   console.log("-----------------------------------------\n");
 
   if (failed > 0) {
     process.exit(1);
+  } else {
+    process.exit(0);
   }
 }
 
