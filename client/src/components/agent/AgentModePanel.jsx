@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Bot,
   Shield,
@@ -16,7 +16,9 @@ import {
   Lock,
   Eye,
   Check,
-  RefreshCw
+  RefreshCw,
+  Radio,
+  Activity
 } from "lucide-react";
 import { agentApi } from "../../services/api";
 import Card from "../ui/Card";
@@ -40,11 +42,96 @@ export default function AgentModePanel({ repositoryId, repositoryName }) {
   const [toastMessage, setToastMessage] = useState(null);
   const [expandedDiffs, setExpandedDiffs] = useState({});
 
+  // Realtime Streaming State
+  const [liveProgress, setLiveProgress] = useState(null);
+  const [streamStatus, setStreamStatus] = useState("idle"); // "idle" | "connected" | "streaming" | "fallback"
+  const [recentEvents, setRecentEvents] = useState([]);
+  const eventSourceRef = useRef(null);
+
   useEffect(() => {
     if (repositoryId) {
       loadPastSessions();
     }
+    return () => {
+      closeEventStream();
+    };
   }, [repositoryId]);
+
+  // Connect or disconnect SSE stream based on active session status
+  useEffect(() => {
+    if (session?._id && !["applied", "rejected"].includes(session.status)) {
+      initEventStream(session._id);
+    } else {
+      closeEventStream();
+    }
+    return () => {
+      closeEventStream();
+    };
+  }, [session?._id, session?.status]);
+
+  const closeEventStream = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+      setStreamStatus("idle");
+    }
+  };
+
+  const initEventStream = (sessionId) => {
+    closeEventStream();
+
+    try {
+      setStreamStatus("connected");
+      const es = agentApi.createEventStream(sessionId, {
+        onOpen: () => {
+          setStreamStatus("streaming");
+        },
+        onEvent: (event) => {
+          if (!event) return;
+
+          // Record recent live event
+          setRecentEvents((prev) => [
+            { id: event.id, type: event.type, timestamp: event.timestamp, message: event.progress?.message || event.type },
+            ...prev.slice(0, 6)
+          ]);
+
+          if (event.progress) {
+            setLiveProgress(event.progress);
+          }
+
+          // Handle task payload updates
+          if (event.payload?.session) {
+            setSession(event.payload.session);
+          }
+
+          if (event.type === "task.completed") {
+            setStreamStatus("connected");
+            if (event.progress?.phase === "plan_ready") {
+              setToastMessage("Implementation plan ready for review.");
+            } else if (event.progress?.phase === "changes_ready") {
+              setToastMessage("Proposed code changes generated and diff preview ready.");
+            } else if (event.progress?.phase === "applied") {
+              setToastMessage("Proposed changes applied safely.");
+            }
+            loadPastSessions();
+          } else if (event.type === "task.failed" || event.type === "task.cancelled") {
+            setStreamStatus("idle");
+            if (event.payload?.reason) {
+              setToastMessage(`Task update: ${event.payload.reason}`);
+            }
+          }
+        },
+        onError: () => {
+          // Graceful fallback: mark streaming as fallback, don't crash UI
+          setStreamStatus("fallback");
+        }
+      });
+
+      eventSourceRef.current = es;
+    } catch {
+      setStreamStatus("fallback");
+    }
+  };
 
   const loadPastSessions = async () => {
     try {
@@ -63,6 +150,8 @@ export default function AgentModePanel({ repositoryId, repositoryName }) {
 
     setLoading(true);
     setError(null);
+    setLiveProgress({ percent: 15, message: "Initializing autonomous agent and analyzing AST...", phase: "planning" });
+
     try {
       const res = await agentApi.createPlan({
         repositoryId,
@@ -87,6 +176,8 @@ export default function AgentModePanel({ repositoryId, repositoryName }) {
     if (!session?._id) return;
     setSubmittingAction(true);
     setError(null);
+    setLiveProgress({ percent: 20, message: "Synthesizing code changes and verifying AST safeguards...", phase: "diff_generation" });
+
     try {
       const res = await agentApi.approvePlan(session._id);
       if (res.success && res.session) {
@@ -115,6 +206,8 @@ export default function AgentModePanel({ repositoryId, repositoryName }) {
 
     setSubmittingAction(true);
     setError(null);
+    setLiveProgress({ percent: 40, message: "Creating reversible backup snapshots and applying diffs...", phase: "applying" });
+
     try {
       const res = await agentApi.applyChanges(session._id);
       if (res.success && res.session) {
@@ -297,6 +390,47 @@ export default function AgentModePanel({ repositoryId, repositoryName }) {
       {/* Active Session Display */}
       {session && (
         <div className="space-y-6">
+          {/* Real-time Streaming Progress HUD */}
+          <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5 font-mono text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                    streamStatus === "streaming" ? "bg-emerald-400" : streamStatus === "connected" ? "bg-sky-400" : "bg-amber-400"
+                  }`} />
+                  <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                    streamStatus === "streaming" ? "bg-emerald-500" : streamStatus === "connected" ? "bg-sky-500" : "bg-amber-500"
+                  }`} />
+                </span>
+                <span className="text-slate-200 font-semibold flex items-center gap-1.5">
+                  <Radio className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Real-time Stream: {streamStatus === "streaming" ? "Live SSE Active" : streamStatus === "fallback" ? "Polling Fallback" : "Connected"}</span>
+                </span>
+              </div>
+              {liveProgress?.phase && (
+                <Badge variant={liveProgress.phase === "applied" ? "emerald" : "cyan"} size="sm">
+                  {liveProgress.phase.toUpperCase()}
+                </Badge>
+              )}
+            </div>
+
+            {liveProgress?.message && (
+              <div className="text-xs text-sky-300 flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-sky-400 shrink-0 animate-pulse" />
+                <span className="truncate">{liveProgress.message}</span>
+              </div>
+            )}
+
+            {liveProgress?.percent !== undefined && (
+              <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-sky-500 to-emerald-400 h-1.5 transition-all duration-300 ease-out"
+                  style={{ width: `${liveProgress.percent}%` }}
+                />
+              </div>
+            )}
+          </div>
+
           {/* Progress Timeline Stepper */}
           <div className="p-4 rounded-xl bg-[#0C101A] border border-slate-800 flex items-center justify-between text-xs font-mono">
             {[

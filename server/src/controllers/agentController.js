@@ -1,5 +1,7 @@
 import AgentSession from "../models/AgentSession.js";
 import * as agentService from "../services/agentService.js";
+import { eventBus } from "../services/realtime/eventBus.js";
+import { createEvent, formatSSEMessage, EVENT_TYPES } from "../services/realtime/eventContract.js";
 
 /**
  * @route   POST /api/agent/plan
@@ -102,6 +104,134 @@ export const rejectChanges = async (req, res, next) => {
 };
 
 /**
+ * @route   GET /api/agent/tasks/:taskId/events
+ * @route   GET /api/agent/:id/stream
+ * @desc    Stream real-time task progress and status updates via Server-Sent Events (SSE)
+ * @access  Private
+ */
+export const streamTaskEvents = async (req, res, next) => {
+  const taskId = req.params.taskId || req.params.id;
+
+  try {
+    if (!taskId) {
+      return res.status(400).json({ success: false, message: "Task ID is required." });
+    }
+
+    // 1. Verify task ownership & authorization
+    const session = await AgentSession.findOne({
+      _id: taskId,
+      userId: req.user._id
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: "Agent session not found or access denied."
+      });
+    }
+
+    // 2. Set SSE HTTP headers
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    if (typeof res.flushHeaders === "function") {
+      res.flushHeaders();
+    }
+
+    // 3. Send initial state snapshot
+    const initEvent = createEvent({
+      type: EVENT_TYPES.TASK_STARTED,
+      taskId: session._id,
+      progress: {
+        phase: session.status,
+        message: `Connected to task stream (${session.status})`
+      },
+      payload: {
+        status: session.status,
+        goalPrompt: session.goalPrompt,
+        planReady: !!session.plan?.summary,
+        changesReady: session.proposedChanges?.length > 0
+      }
+    });
+    res.write(formatSSEMessage(initEvent));
+
+    // 4. If session is already finalized, send terminal event and end
+    if (["applied", "rejected", "failed"].includes(session.status)) {
+      const termEvent = createEvent({
+        type: session.status === "applied" ? EVENT_TYPES.TASK_COMPLETED : EVENT_TYPES.TASK_CANCELLED,
+        taskId: session._id,
+        progress: {
+          phase: session.status,
+          percent: 100,
+          message: `Task is already finalized in state: ${session.status}`
+        },
+        payload: { status: session.status }
+      });
+      res.write(formatSSEMessage(termEvent));
+      res.end();
+      return;
+    }
+
+    // 5. Periodic Heartbeat (15s keep-alive)
+    const heartbeatTimer = setInterval(() => {
+      try {
+        const heartbeat = createEvent({
+          type: EVENT_TYPES.HEARTBEAT,
+          taskId: session._id
+        });
+        res.write(formatSSEMessage(heartbeat));
+      } catch (_) {}
+    }, 15000);
+
+    // 6. Subscribe to live task events from the EventBus
+    let isClosed = false;
+    const cleanup = () => {
+      if (isClosed) return;
+      isClosed = true;
+      clearInterval(heartbeatTimer);
+      unsubscribe();
+    };
+
+    const unsubscribe = eventBus.subscribeTask(session._id.toString(), (event) => {
+      if (isClosed) return;
+      try {
+        res.write(formatSSEMessage(event));
+
+        // If task reached terminal state (applied/failed/cancelled), close after grace period
+        if (event.type === EVENT_TYPES.TASK_COMPLETED && event.progress?.phase === "applied") {
+          setTimeout(() => {
+            cleanup();
+            try { res.end(); } catch (_) {}
+          }, 1000);
+        } else if (
+          event.type === EVENT_TYPES.TASK_FAILED ||
+          event.type === EVENT_TYPES.TASK_CANCELLED
+        ) {
+          setTimeout(() => {
+            cleanup();
+            try { res.end(); } catch (_) {}
+          }, 1000);
+        }
+      } catch (err) {
+        cleanup();
+      }
+    });
+
+    // Handle client disconnect
+    req.on("close", () => {
+      cleanup();
+    });
+
+    req.on("error", () => {
+      cleanup();
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @route   GET /api/agent/:id
  * @desc    Get details for an AI Agent session
  * @access  Private
@@ -154,3 +284,4 @@ export const listSessions = async (req, res, next) => {
     next(error);
   }
 };
+

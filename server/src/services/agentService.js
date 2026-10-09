@@ -2,6 +2,8 @@ import AgentSession from "../models/AgentSession.js";
 import Repository from "../models/Repository.js";
 import Analysis from "../models/Analysis.js";
 import { config } from "../config/env.js";
+import { eventBus } from "./realtime/eventBus.js";
+import { EVENT_TYPES } from "./realtime/eventContract.js";
 
 /**
  * Computes a unified-style diff string between two text bodies
@@ -198,6 +200,25 @@ export async function createPlan({ repositoryId, userId, goalPrompt }) {
     ]
   });
 
+  // Broadcast real-time planning events
+  await eventBus.publishTaskEvent(session._id, {
+    type: EVENT_TYPES.TASK_STARTED,
+    progress: { phase: "planning", step: 1, totalSteps: 3, percent: 25, message: "AI Agent initialized task planning..." },
+    payload: { status: "planning", goalPrompt }
+  });
+
+  await eventBus.publishTaskEvent(session._id, {
+    type: EVENT_TYPES.TASK_PROGRESS,
+    progress: { phase: "planning", step: 2, totalSteps: 3, percent: 65, message: "Analyzing repository architecture and affected files..." },
+    payload: { affectedFiles }
+  });
+
+  await eventBus.publishTaskEvent(session._id, {
+    type: EVENT_TYPES.TASK_COMPLETED,
+    progress: { phase: "plan_ready", step: 3, totalSteps: 3, percent: 100, message: "Implementation plan synthesized successfully." },
+    payload: { session }
+  });
+
   return session;
 }
 
@@ -214,6 +235,11 @@ export async function generateChanges(sessionId, userId) {
   if (session.status !== "plan_ready" && session.status !== "plan_approved") {
     throw new Error(`Cannot generate changes for session in status: ${session.status}`);
   }
+
+  await eventBus.publishTaskEvent(session._id, {
+    type: EVENT_TYPES.TASK_STARTED,
+    progress: { phase: "diff_generation", step: 1, totalSteps: 3, percent: 20, message: "Plan approved. Generating code modifications..." }
+  });
 
   session.status = "plan_approved";
 
@@ -352,6 +378,11 @@ router.post("/reset-password/:token", authController.resetPassword);`;
     });
   }
 
+  await eventBus.publishTaskEvent(session._id, {
+    type: EVENT_TYPES.TASK_PROGRESS,
+    progress: { phase: "diff_generation", step: 2, totalSteps: 3, percent: 80, message: "Validating AST code safeguards..." }
+  });
+
   session.proposedChanges = proposedChanges;
   session.status = "changes_ready";
   session.auditLog.push({
@@ -360,6 +391,13 @@ router.post("/reset-password/:token", authController.resetPassword);`;
   });
 
   await session.save();
+
+  await eventBus.publishTaskEvent(session._id, {
+    type: EVENT_TYPES.TASK_COMPLETED,
+    progress: { phase: "changes_ready", step: 3, totalSteps: 3, percent: 100, message: "Proposed code changes generated and diff preview ready." },
+    payload: { session }
+  });
+
   return session;
 }
 
@@ -376,6 +414,11 @@ export async function applyChanges(sessionId, userId) {
   if (session.status !== "changes_ready") {
     throw new Error(`Cannot apply changes. Session status is ${session.status} (expected changes_ready)`);
   }
+
+  await eventBus.publishTaskEvent(session._id, {
+    type: EVENT_TYPES.TASK_PROGRESS,
+    progress: { phase: "applying", step: 1, totalSteps: 2, percent: 50, message: "Creating reversible backup snapshots..." }
+  });
 
   // 1. Create reversible backup snapshot of every modified file
   const backups = session.proposedChanges.map((change) => ({
@@ -398,6 +441,13 @@ export async function applyChanges(sessionId, userId) {
   });
 
   await session.save();
+
+  await eventBus.publishTaskEvent(session._id, {
+    type: EVENT_TYPES.TASK_COMPLETED,
+    progress: { phase: "applied", step: 2, totalSteps: 2, percent: 100, message: "Proposed changes applied safely. Reversible backup snapshot saved." },
+    payload: { session }
+  });
+
   return session;
 }
 
@@ -422,5 +472,13 @@ export async function rejectChanges(sessionId, userId, reason = "User rejected p
   });
 
   await session.save();
+
+  await eventBus.publishTaskEvent(session._id, {
+    type: EVENT_TYPES.TASK_CANCELLED,
+    progress: { phase: "rejected", message: `Proposed changes rejected: ${reason}. Files untouched.` },
+    payload: { session, reason }
+  });
+
   return session;
 }
+

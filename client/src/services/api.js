@@ -217,6 +217,52 @@ export const agentApi = {
   listSessions: async (params = {}) => {
     const response = await apiClient.get("/api/agent", { params });
     return response.data;
+  },
+  getStreamUrl: (sessionId) => {
+    const token = localStorage.getItem("devra_token") || "";
+    return `${API_BASE_URL}/api/agent/tasks/${sessionId}/events?token=${encodeURIComponent(token)}`;
+  },
+  createEventStream: (sessionId, { onEvent, onError, onOpen } = {}) => {
+    const token = localStorage.getItem("devra_token") || "";
+    const url = `${API_BASE_URL}/api/agent/tasks/${sessionId}/events?token=${encodeURIComponent(token)}`;
+    const eventSource = new EventSource(url);
+
+    if (onOpen) eventSource.onopen = onOpen;
+
+    const eventTypes = [
+      "task.started",
+      "task.progress",
+      "task.step",
+      "review.started",
+      "review.finding",
+      "review.completed",
+      "task.completed",
+      "task.failed",
+      "task.cancelled",
+      "heartbeat"
+    ];
+
+    eventTypes.forEach((type) => {
+      eventSource.addEventListener(type, (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (onEvent) onEvent(data);
+        } catch (_) {}
+      });
+    });
+
+    eventSource.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (onEvent) onEvent(data);
+      } catch (_) {}
+    };
+
+    if (onError) {
+      eventSource.onerror = onError;
+    }
+
+    return eventSource;
   }
 };
 
