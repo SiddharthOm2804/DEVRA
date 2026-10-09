@@ -14,6 +14,17 @@ services:
     networks:
       - devpilot-network
 
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: devpilot-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - devpilot-redis-data:/data
+    networks:
+      - devpilot-network
+
   server:
     build:
       context: ./server
@@ -26,12 +37,16 @@ services:
       - PORT=5000
       - NODE_ENV=production
       - MONGODB_URI=mongodb://mongodb:27017/devra
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - VECTOR_STORE=redis
       - CLIENT_URL=http://localhost:80
       - JWT_SECRET=${JWT_SECRET:-devpilot_production_jwt_secret_32chars_key!}
       - AI_PROVIDER=${AI_PROVIDER:-gemini}
       - AI_API_KEY=${AI_API_KEY:-}
     depends_on:
       - mongodb
+      - redis
     networks:
       - devpilot-network
 
@@ -50,6 +65,8 @@ services:
 
 volumes:
   devpilot-data:
+    driver: local
+  devpilot-redis-data:
     driver: local
 
 networks:

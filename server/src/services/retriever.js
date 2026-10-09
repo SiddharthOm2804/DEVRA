@@ -1,15 +1,17 @@
 import Analysis from "../models/Analysis.js";
 import Repository from "../models/Repository.js";
-import { generateEmbedding, cosineSimilarity } from "./embeddingService.js";
+import { generateEmbedding, batchGenerateEmbeddings } from "./embeddingService.js";
+import { getVectorStore } from "./vectorStore/index.js";
+import logger from "../utils/logger.js";
 
-// In-memory cache for repository chunk vector stores: repositoryId -> { timestamp, chunks }
-const vectorIndexCache = new Map();
+// Cache for tracking whether a repository namespace has been seeded during server runtime
+const indexedNamespaces = new Set();
 
 /**
  * Creates logical code chunks from a file's content
  */
 export function chunkFileContent(filePath, fileName, content, language = "JavaScript") {
-  const lines = content.split("\n");
+  const lines = (content || "").split("\n");
   const chunks = [];
   const CHUNK_SIZE = 45;
   const CHUNK_OVERLAP = 10;
@@ -22,7 +24,7 @@ export function chunkFileContent(filePath, fileName, content, language = "JavaSc
       language,
       startLine: 1,
       endLine: lines.length,
-      content: content.trim()
+      content: (content || "").trim()
     });
     return chunks;
   }
@@ -51,9 +53,10 @@ export function chunkFileContent(filePath, fileName, content, language = "JavaSc
 /**
  * Generates foundational codebase chunks for a repository based on analysis and models
  */
-function buildRepositoryKnowledgeChunks(repo, analysis) {
+export function buildRepositoryKnowledgeChunks(repo, analysis) {
   const chunks = [];
-  const repoName = repo.name || "repository";
+  const repoName = repo?.name || "repository";
+  const repoBranch = repo?.activeBranch || "main";
 
   // 1. Authentication module chunks
   chunks.push({
@@ -239,116 +242,183 @@ export default function ${file.name.replace(/\.[^/.]+$/, "")}() {
 }
 
 /**
- * Ensures the repository's vector store is initialized and cached in memory
+ * Ensures the repository's vector store is initialized with chunk embeddings
+ * @param {string|Object} repositoryId - Target repository ID
+ * @param {string} [branch="main"] - Target repository branch
+ * @param {boolean} [forceReindex=false] - Force re-indexing of vectors
  */
-export async function ensureRepositoryIndexed(repositoryId) {
+export async function ensureRepositoryIndexed(repositoryId, branch = "main", forceReindex = false) {
   const repoIdStr = repositoryId.toString();
+  const namespaceKey = `${repoIdStr}:${branch || "main"}`;
 
-  // Check cache (TTL 30 minutes)
-  if (vectorIndexCache.has(repoIdStr)) {
-    const cached = vectorIndexCache.get(repoIdStr);
-    if (Date.now() - cached.timestamp < 30 * 60 * 1000) {
-      return cached.chunks;
-    }
+  if (!forceReindex && indexedNamespaces.has(namespaceKey)) {
+    return true;
   }
 
-  // Load repository and analysis metadata
+  const vectorStore = await getVectorStore();
+
+  // If reindex requested, delete existing repository namespace first
+  if (forceReindex) {
+    await vectorStore.deleteNamespace({ repositoryId: repoIdStr, branch });
+    indexedNamespaces.delete(namespaceKey);
+  }
+
+  // Load repository and analysis metadata from MongoDB if available
   const [repo, analysis] = await Promise.all([
     Repository.findById(repositoryId).catch(() => null),
     Analysis.findOne({ repositoryId }).sort({ createdAt: -1 }).catch(() => null)
   ]);
 
-  const rawChunks = buildRepositoryKnowledgeChunks(repo || { name: "Codebase" }, analysis);
+  const activeBranch = branch || repo?.activeBranch || "main";
+  const rawChunks = buildRepositoryKnowledgeChunks(repo || { name: "Codebase", activeBranch }, analysis);
 
-  // Generate embeddings for all chunks in parallel
-  const chunksWithEmbeddings = await Promise.all(
+  // Generate embeddings and enrich chunks
+  const chunksToUpsert = await Promise.all(
     rawChunks.map(async (chunk) => {
       const embeddingText = `${chunk.filePath} ${chunk.fileName} ${chunk.content}`;
       const embedding = await generateEmbedding(embeddingText);
       return {
         ...chunk,
-        embedding
+        repositoryId: repoIdStr,
+        branch: activeBranch,
+        embedding,
+        metadata: {
+          indexedAt: new Date().toISOString(),
+          repoName: repo?.name || "Codebase"
+        }
       };
     })
   );
 
-  // Cache in memory
-  vectorIndexCache.set(repoIdStr, {
-    timestamp: Date.now(),
-    chunks: chunksWithEmbeddings
-  });
-
-  return chunksWithEmbeddings;
+  // Batch upsert to vector store
+  const { inserted } = await vectorStore.upsert(chunksToUpsert);
+  indexedNamespaces.add(namespaceKey);
+  logger.info(`[Retriever] Successfully indexed ${inserted} chunks for repository '${repoIdStr}' (branch: ${activeBranch}) via ${vectorStore.getName()} vector store.`);
+  return true;
 }
 
 /**
- * Retrieves the top-K relevant code chunks for a given user query
- * NEVER sends the entire repository to the model!
+ * Indexes arbitrary file documents into the repository vector store
+ * Supports full repository scans and incremental updates
  */
-export async function retrieveRelevantChunks({ repositoryId, query, topK = 4 }) {
-  if (!query || typeof query !== "string") {
+export async function indexRepositoryFiles({ repositoryId, branch = "main", files = [] }) {
+  if (!repositoryId || !Array.isArray(files) || files.length === 0) {
+    return { indexed: 0 };
+  }
+
+  const vectorStore = await getVectorStore();
+  const repoIdStr = repositoryId.toString();
+  const chunks = [];
+
+  for (const file of files) {
+    const fileChunks = chunkFileContent(
+      file.path || file.filePath,
+      file.name || file.fileName,
+      file.content || "",
+      file.language || "JavaScript"
+    );
+
+    for (const fc of fileChunks) {
+      const embeddingText = `${fc.filePath} ${fc.fileName} ${fc.content}`;
+      const embedding = await generateEmbedding(embeddingText);
+      chunks.push({
+        ...fc,
+        repositoryId: repoIdStr,
+        branch,
+        embedding,
+        metadata: {
+          fileSize: file.size,
+          lastModified: file.lastModified
+        }
+      });
+    }
+  }
+
+  const { inserted } = await vectorStore.upsert(chunks);
+  indexedNamespaces.add(`${repoIdStr}:${branch}`);
+  return { indexed: inserted };
+}
+
+/**
+ * Deletes vector embeddings for a repository (and optional branch)
+ */
+export async function deleteRepositoryVectors({ repositoryId, branch }) {
+  const vectorStore = await getVectorStore();
+  const repoIdStr = repositoryId.toString();
+  const result = await vectorStore.deleteNamespace({ repositoryId: repoIdStr, branch });
+  if (branch) {
+    indexedNamespaces.delete(`${repoIdStr}:${branch}`);
+  } else {
+    for (const key of Array.from(indexedNamespaces)) {
+      if (key.startsWith(`${repoIdStr}:`)) {
+        indexedNamespaces.delete(key);
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Retrieves top-K relevant code chunks for a user query using vector similarity search
+ * Enforces strict repository isolation
+ */
+export async function retrieveRelevantChunks({ repositoryId, branch = "main", query, topK = 4 }) {
+  if (!query || typeof query !== "string" || !repositoryId) {
     return { chunks: [], contextString: "", sourceReferences: [] };
   }
 
-  // 1. Get indexed chunks for this repository
-  const indexedChunks = await ensureRepositoryIndexed(repositoryId);
+  const startTime = Date.now();
+  const repoIdStr = repositoryId.toString();
+
+  // 1. Ensure repository is indexed
+  await ensureRepositoryIndexed(repoIdStr, branch);
 
   // 2. Generate embedding for user query
   const queryEmbedding = await generateEmbedding(query);
 
-  const lowerQuery = query.toLowerCase();
-
-  // 3. Rank chunks by Cosine Similarity + Keyword Relevance Boost
-  const scoredChunks = indexedChunks.map((chunk) => {
-    let similarity = cosineSimilarity(queryEmbedding, chunk.embedding);
-
-    // Keyword matching bonus (e.g. "auth", "payment", "database", "api", "route")
-    const lowerPath = chunk.filePath.toLowerCase();
-    const lowerContent = chunk.content.toLowerCase();
-
-    if (lowerQuery.includes("auth") && lowerPath.includes("auth")) similarity += 0.35;
-    if (lowerQuery.includes("payment") && lowerPath.includes("payment")) similarity += 0.35;
-    if ((lowerQuery.includes("database") || lowerQuery.includes("db") || lowerQuery.includes("model")) &&
-        (lowerPath.includes("model") || lowerPath.includes("schema") || lowerPath.includes("user"))) {
-      similarity += 0.35;
-    }
-    if ((lowerQuery.includes("endpoint") || lowerQuery.includes("route") || lowerQuery.includes("flow")) &&
-        (lowerPath.includes("route") || lowerPath.includes("app.js") || lowerPath.includes("controller"))) {
-      similarity += 0.30;
-    }
-
-    return {
-      chunk,
-      score: Math.min(1.0, Math.max(0, similarity))
-    };
+  // 3. Search via vector store
+  const vectorStore = await getVectorStore();
+  const scoredChunks = await vectorStore.search({
+    repositoryId: repoIdStr,
+    branch,
+    queryEmbedding,
+    queryText: query,
+    topK
   });
 
-  // Sort descending by relevance score
-  scoredChunks.sort((a, b) => b.score - a.score);
+  const durationMs = Date.now() - startTime;
+  logger.debug(`[Retriever] Retrieved ${scoredChunks.length} chunks for query in ${durationMs}ms via ${vectorStore.getName()} vector store.`);
 
-  // Pick top-K chunks
-  const selected = scoredChunks.slice(0, topK);
-
-  // Assemble formatted context and citations
+  // 4. Assemble formatted context and citations
   let contextString = "";
   const sourceReferences = [];
 
-  selected.forEach(({ chunk, score }, idx) => {
-    contextString += `\n--- SOURCE FILE #${idx + 1}: ${chunk.filePath} (Lines ${chunk.startLine}-${chunk.endLine}) ---\n`;
-    contextString += `${chunk.content}\n`;
+  scoredChunks.forEach(({ id, filePath, fileName, startLine, endLine, content, score, relevanceScore }, idx) => {
+    contextString += `\n--- SOURCE FILE #${idx + 1}: ${filePath} (Lines ${startLine}-${endLine}) ---\n`;
+    contextString += `${content}\n`;
 
     sourceReferences.push({
-      fileName: chunk.fileName,
-      filePath: chunk.filePath,
-      lineRange: `${chunk.startLine}-${chunk.endLine}`,
-      snippet: chunk.content.slice(0, 350),
-      relevanceScore: Math.round(score * 100)
+      id,
+      fileName,
+      filePath,
+      lineRange: `${startLine}-${endLine}`,
+      snippet: (content || "").slice(0, 350),
+      relevanceScore: relevanceScore || Math.round((score || 0) * 100)
     });
   });
 
   return {
-    chunks: selected.map((s) => s.chunk),
+    chunks: scoredChunks,
     contextString: contextString.trim(),
     sourceReferences
   };
 }
+
+export default {
+  chunkFileContent,
+  buildRepositoryKnowledgeChunks,
+  ensureRepositoryIndexed,
+  indexRepositoryFiles,
+  deleteRepositoryVectors,
+  retrieveRelevantChunks
+};

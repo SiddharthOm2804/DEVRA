@@ -1,4 +1,5 @@
 import Repository from "../models/Repository.js";
+import { deleteRepositoryVectors } from "./retriever.js";
 
 /**
  * Curated seed repositories to provide new users an immediate, rich developer dashboard.
@@ -232,12 +233,18 @@ export const updateRepository = async (userId, id, updateData) => {
   );
   return repo;
 };
-
 /**
- * Delete a repository
+ * Delete a repository and its persistent vector store embeddings
  */
 export const deleteRepository = async (userId, id) => {
   const result = await Repository.findOneAndDelete({ _id: id, userId });
+  if (result) {
+    try {
+      await deleteRepositoryVectors({ repositoryId: id });
+    } catch (err) {
+      // Non-blocking cleanup logging
+    }
+  }
   return result;
 };
 

@@ -26,5 +26,19 @@ export const config = {
     model: process.env.AI_MODEL || "gemini-1.5-pro",
     maxTokens: parseInt(process.env.AI_MAX_TOKENS || "4096", 10),
     temperature: parseFloat(process.env.AI_TEMPERATURE || "0.2")
+  },
+  redis: {
+    url: process.env.REDIS_URL || "",
+    host: process.env.REDIS_HOST || "localhost",
+    port: parseInt(process.env.REDIS_PORT || "6379", 10),
+    password: process.env.REDIS_PASSWORD || "",
+    tls: process.env.REDIS_TLS === "true"
+  },
+  rag: {
+    vectorStore: (process.env.VECTOR_STORE || "redis").toLowerCase(),
+    vectorDimension: parseInt(process.env.VECTOR_DIMENSION || "128", 10),
+    indexName: process.env.REDIS_INDEX_NAME || "devra:idx:codebase",
+    keyPrefix: process.env.REDIS_DOC_PREFIX || "devra:doc:",
+    distanceMetric: process.env.REDIS_DISTANCE_METRIC || "COSINE"
   }
 };

@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { shouldIgnorePath, detectLanguage, detectEntryPoint } from "./src/services/codeAnalysisService.js";
 import { generateUnifiedDiff, validateProposedCodeSafeguards } from "./src/services/agentService.js";
+import { runVectorStoreTests } from "./tests/vectorStore.test.js";
 
 async function runTests() {
   console.log("=========================================");
@@ -118,8 +119,13 @@ async function runTests() {
     );
   });
 
+  // Run persistent Vector Store test suite
+  const vsResults = await runVectorStoreTests();
+  passed += vsResults.passed;
+  failed += vsResults.failed;
+
   console.log("\n-----------------------------------------");
-  console.log(`Results: ${passed} passed, ${failed} failed.`);
+  console.log(`Total Results: ${passed} passed, ${failed} failed.`);
   console.log("-----------------------------------------\n");
 
   if (failed > 0) {
