@@ -350,3 +350,71 @@ export const handleGithubCallback = async (req, res, next) => {
     return res.redirect(`${config.clientUrl}/login?github_error=unexpected`);
   }
 };
+
+/**
+ * @route   GET /api/auth/users
+ * @desc    Get list of all users and their assigned roles (Admin only)
+ * @access  Private/Admin
+ */
+export const getUsers = async (req, res, next) => {
+  try {
+    const users = await User.find().select("-password").sort({ createdAt: -1 });
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      users
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   PATCH /api/auth/users/:id/role
+ * @desc    Update a user's role (Admin only)
+ * @access  Private/Admin
+ */
+export const updateUserRole = async (req, res, next) => {
+  try {
+    const { role } = req.body;
+    const allowedRoles = ["admin", "architect", "developer", "guest"];
+
+    if (!role || !allowedRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid role. Allowed roles: ${allowedRoles.join(", ")}`
+      });
+    }
+
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found."
+      });
+    }
+
+    // Safety check: Prevent demoting the last active Admin user
+    if (targetUser.role === "admin" && role !== "admin") {
+      const adminCount = await User.countDocuments({ role: "admin" });
+      if (adminCount <= 1) {
+        return res.status(400).json({
+          success: false,
+          message: "Cannot demote the last remaining Admin user in the system."
+        });
+      }
+    }
+
+    targetUser.role = role;
+    await targetUser.save();
+
+    res.status(200).json({
+      success: true,
+      message: `User ${targetUser.email} role updated to ${role}.`,
+      user: targetUser
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

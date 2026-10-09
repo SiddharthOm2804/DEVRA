@@ -5,6 +5,7 @@ import { shouldIgnorePath, detectLanguage, detectEntryPoint } from "./src/servic
 import { generateUnifiedDiff, validateProposedCodeSafeguards } from "./src/services/agentService.js";
 import { runVectorStoreTests } from "./tests/vectorStore.test.js";
 import { runRealtimeStreamingTests } from "./tests/realtimeStreaming.test.js";
+import { runRbacTests } from "./tests/rbac.test.js";
 import { eventBus } from "./src/services/realtime/eventBus.js";
 
 async function runTests() {
@@ -130,6 +131,11 @@ async function runTests() {
   const streamResults = await runRealtimeStreamingTests();
   passed += streamResults.passed;
   failed += streamResults.failed;
+
+  // Run Role-Based Access Control (RBAC) test suite
+  const rbacResults = await runRbacTests();
+  passed += rbacResults.passed;
+  failed += rbacResults.failed;
 
   await eventBus.close();
 
