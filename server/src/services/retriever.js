@@ -2,6 +2,7 @@ import Analysis from "../models/Analysis.js";
 import Repository from "../models/Repository.js";
 import { generateEmbedding, batchGenerateEmbeddings } from "./embeddingService.js";
 import { getVectorStore } from "./vectorStore/index.js";
+import { extractSyntaxChunks } from "./treeSitterParser.js";
 import logger from "../utils/logger.js";
 
 // Cache for tracking whether a repository namespace has been seeded during server runtime
@@ -311,15 +312,20 @@ export async function indexRepositoryFiles({ repositoryId, branch = "main", file
   const chunks = [];
 
   for (const file of files) {
-    const fileChunks = chunkFileContent(
-      file.path || file.filePath,
-      file.name || file.fileName,
-      file.content || "",
-      file.language || "JavaScript"
-    );
+    const filePath = file.path || file.filePath;
+    const fileName = file.name || file.fileName;
+    const content = file.content || "";
+    const language = file.language || "JavaScript";
+
+    let fileChunks = [];
+    try {
+      fileChunks = await extractSyntaxChunks(filePath, fileName, content, language);
+    } catch (_) {
+      fileChunks = chunkFileContent(filePath, fileName, content, language);
+    }
 
     for (const fc of fileChunks) {
-      const embeddingText = `${fc.filePath} ${fc.fileName} ${fc.content}`;
+      const embeddingText = `${fc.filePath} ${fc.fileName} ${fc.symbolName || ""} ${fc.content}`;
       const embedding = await generateEmbedding(embeddingText);
       chunks.push({
         ...fc,
@@ -328,7 +334,9 @@ export async function indexRepositoryFiles({ repositoryId, branch = "main", file
         embedding,
         metadata: {
           fileSize: file.size,
-          lastModified: file.lastModified
+          lastModified: file.lastModified,
+          symbolType: fc.symbolType || "block",
+          symbolName: fc.symbolName || null
         }
       });
     }

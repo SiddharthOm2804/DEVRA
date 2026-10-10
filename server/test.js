@@ -6,6 +6,7 @@ import { generateUnifiedDiff, validateProposedCodeSafeguards } from "./src/servi
 import { runVectorStoreTests } from "./tests/vectorStore.test.js";
 import { runRealtimeStreamingTests } from "./tests/realtimeStreaming.test.js";
 import { runRbacTests } from "./tests/rbac.test.js";
+import { runTreeSitterTests } from "./tests/treeSitter.test.js";
 import { eventBus } from "./src/services/realtime/eventBus.js";
 
 async function runTests() {
@@ -136,6 +137,11 @@ async function runTests() {
   const rbacResults = await runRbacTests();
   passed += rbacResults.passed;
   failed += rbacResults.failed;
+
+  // Run Tree-sitter WASM & AST test suite
+  const tsResults = await runTreeSitterTests();
+  passed += tsResults.passed;
+  failed += tsResults.failed;
 
   await eventBus.close();
 
