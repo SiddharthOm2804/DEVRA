@@ -18,7 +18,8 @@ export const config = {
   github: {
     clientId: process.env.GITHUB_CLIENT_ID || "",
     clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-    callbackUrl: process.env.GITHUB_CALLBACK_URL || "http://localhost:5000/api/auth/github/callback"
+    callbackUrl: process.env.GITHUB_CALLBACK_URL || "http://localhost:5000/api/auth/github/callback",
+    webhookSecret: process.env.GITHUB_WEBHOOK_SECRET || "devra_webhook_secret_default_2026"
   },
   ai: {
     provider: process.env.AI_PROVIDER || "gemini",

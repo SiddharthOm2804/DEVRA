@@ -7,6 +7,7 @@ import { runVectorStoreTests } from "./tests/vectorStore.test.js";
 import { runRealtimeStreamingTests } from "./tests/realtimeStreaming.test.js";
 import { runRbacTests } from "./tests/rbac.test.js";
 import { runTreeSitterTests } from "./tests/treeSitter.test.js";
+import { runWebhookTests } from "./tests/webhook.test.js";
 import { eventBus } from "./src/services/realtime/eventBus.js";
 
 async function runTests() {
@@ -142,6 +143,11 @@ async function runTests() {
   const tsResults = await runTreeSitterTests();
   passed += tsResults.passed;
   failed += tsResults.failed;
+
+  // Run GitHub PR Webhook & Review test suite
+  const webhookResults = await runWebhookTests();
+  passed += webhookResults.passed;
+  failed += webhookResults.failed;
 
   await eventBus.close();
 

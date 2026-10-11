@@ -9,6 +9,7 @@ import analysisRoutes from "./routes/analysisRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import agentRoutes from "./routes/agentRoutes.js";
+import webhookRoutes from "./routes/webhookRoutes.js";
 import { notFoundHandler, errorHandler } from "./middleware/errorMiddleware.js";
 import { apiLimiter, authLimiter, aiLimiter } from "./middleware/rateLimiter.js";
 import { config } from "./config/env.js";
@@ -52,8 +53,15 @@ if (config.nodeEnv !== "test") {
   app.use(morgan("dev"));
 }
 
-// Body Parsing Middlewares with safe size boundaries
-app.use(express.json({ limit: "10mb" }));
+// Body Parsing Middlewares with safe size boundaries and rawBody capture for webhooks
+app.use(
+  express.json({
+    limit: "10mb",
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
+    }
+  })
+);
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Root Information Endpoint
@@ -84,6 +92,7 @@ app.use("/api/analysis", analysisRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/agent", agentRoutes);
+app.use("/api/webhooks", webhookRoutes);
 
 // Error Handling Middlewares
 app.use(notFoundHandler);

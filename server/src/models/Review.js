@@ -109,6 +109,22 @@ const reviewSchema = new mongoose.Schema(
       type: String,
       enum: ["completed", "failed"],
       default: "completed"
+    },
+    // Pull Request Webhook Tracking Fields
+    prNumber: {
+      type: Number,
+      default: null,
+      index: true
+    },
+    commitSha: {
+      type: String,
+      default: null,
+      index: true
+    },
+    source: {
+      type: String,
+      enum: ["manual", "webhook", "ci"],
+      default: "manual"
     }
   },
   {
