@@ -17,32 +17,55 @@ import {
   Sparkles,
   Info,
   Check,
-  Cpu
+  Cpu,
+  Zap,
+  Gauge,
+  Sliders,
+  Code
 } from "lucide-react";
-import { buildGraphLayout, GROUP_CONFIG } from "./graphLayout";
+import {
+  buildGraphLayout,
+  filterGraphForLOD,
+  determineLODLevel,
+  LOD_LEVELS,
+  LOD_THRESHOLDS,
+  GROUP_CONFIG
+} from "./graphLayout";
 import NodeDetailsPanel from "./NodeDetailsPanel";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
 
-// Camera Animation Controller to smoothly tween camera position and target
+// Pre-allocated shared geometries and materials for zero-waste instancing & single-draw-call rendering
+const SHARED_SPHERE_GEO = new THREE.SphereGeometry(1, 16, 16);
+const SHARED_STANDARD_MAT = new THREE.MeshStandardMaterial({
+  roughness: 0.25,
+  metalness: 0.75,
+  transparent: true,
+  opacity: 0.95
+});
+const SHARED_RING_GEO = new THREE.RingGeometry(1.3, 1.5, 32);
+
+// Reusable Three.js objects to avoid per-frame garbage collection
+const _tempObj = new THREE.Object3D();
+const _tempColor = new THREE.Color();
+const _zeroVec = new THREE.Vector3(0, 0, 0);
+
+// Smooth Camera Motion Controller
 function CameraController({ targetFocus, resetTrigger, controlsRef }) {
   const { camera } = useThree();
   const animatingRef = useRef(false);
   const targetCamPos = useRef(new THREE.Vector3(0, 3.5, 14));
   const targetLookAt = useRef(new THREE.Vector3(0, 0, 0));
 
-  // Handle focus on node
   useEffect(() => {
     if (targetFocus) {
       animatingRef.current = true;
       const [x, y, z] = targetFocus.position;
       targetLookAt.current.set(x, y, z);
-      // Position camera offset in front of node
       targetCamPos.current.set(x, y + 0.6, z + 3.2);
     }
   }, [targetFocus]);
 
-  // Handle camera reset
   useEffect(() => {
     if (resetTrigger > 0) {
       animatingRef.current = true;
@@ -54,14 +77,12 @@ function CameraController({ targetFocus, resetTrigger, controlsRef }) {
   useFrame((state, delta) => {
     if (!animatingRef.current) return;
 
-    // Smooth lerp
     camera.position.lerp(targetCamPos.current, delta * 4.5);
     if (controlsRef.current) {
       controlsRef.current.target.lerp(targetLookAt.current, delta * 4.5);
       controlsRef.current.update();
     }
 
-    // Stop animation when close enough
     if (
       camera.position.distanceTo(targetCamPos.current) < 0.05 &&
       (!controlsRef.current || controlsRef.current.target.distanceTo(targetLookAt.current) < 0.05)
@@ -73,14 +94,44 @@ function CameraController({ targetFocus, resetTrigger, controlsRef }) {
   return null;
 }
 
-// Batched Line Segments for extreme performance (1 draw call for all graph edges)
+// Camera Distance Tracker with Hysteresis & Adaptive Performance Monitor
+function CameraLODTracker({ controlsRef, onDistanceChange, onFpsChange }) {
+  const { camera } = useThree();
+  const lastDistRef = useRef(14);
+  const frameCountRef = useRef(0);
+  const lastTimeRef = useRef(performance.now());
+
+  useFrame(() => {
+    // 1. Distance measurement for LOD
+    const target = controlsRef.current ? controlsRef.current.target : _zeroVec;
+    const dist = camera.position.distanceTo(target);
+    if (Math.abs(dist - lastDistRef.current) > 0.15) {
+      lastDistRef.current = dist;
+      onDistanceChange(dist);
+    }
+
+    // 2. FPS sampling for adaptive quality
+    frameCountRef.current++;
+    if (frameCountRef.current >= 45) {
+      const now = performance.now();
+      const elapsed = (now - lastTimeRef.current) / 1000;
+      const fps = Math.round(frameCountRef.current / elapsed);
+      onFpsChange(fps);
+      frameCountRef.current = 0;
+      lastTimeRef.current = now;
+    }
+  });
+
+  return null;
+}
+
+// Batched Line Segments for extreme performance across LOD levels
 const GraphLines = React.memo(function GraphLines({
   linePositions,
   edges,
   activeNodeId,
-  nodesById
+  isEcoMode
 }) {
-  // Highlighted edges connected to hovered or selected node
   const activeEdges = useMemo(() => {
     if (!activeNodeId) return null;
     const connected = edges.filter(
@@ -98,6 +149,12 @@ const GraphLines = React.memo(function GraphLines({
     return new Float32Array(points);
   }, [activeNodeId, edges]);
 
+  // In eco mode, render fewer background lines to guarantee 60fps
+  const effectiveLinePositions = useMemo(() => {
+    if (!isEcoMode || linePositions.length <= 3000) return linePositions;
+    return linePositions.slice(0, 3000);
+  }, [linePositions, isEcoMode]);
+
   return (
     <group>
       {/* Background Static Edges */}
@@ -105,15 +162,15 @@ const GraphLines = React.memo(function GraphLines({
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
-            count={linePositions.length / 3}
-            array={linePositions}
+            count={effectiveLinePositions.length / 3}
+            array={effectiveLinePositions}
             itemSize={3}
           />
         </bufferGeometry>
         <lineBasicMaterial
           color="#334155"
           transparent
-          opacity={activeNodeId ? 0.15 : 0.4}
+          opacity={activeNodeId ? 0.12 : isEcoMode ? 0.25 : 0.38}
           blending={THREE.AdditiveBlending}
         />
       </lineSegments>
@@ -142,13 +199,102 @@ const GraphLines = React.memo(function GraphLines({
   );
 });
 
-// Single 3D Graph Node
-const GraphNodeMesh = React.memo(function GraphNodeMesh({
+// High-Performance Instanced Nodes for hundreds/thousands of file nodes (1 single draw call)
+const InstancedFileNodes = React.memo(function InstancedFileNodes({
+  nodes,
+  viewMode,
+  hoveredNodeId,
+  selectedNodeId,
+  activeNodeId,
+  connectedNodeIds,
+  onPointerOver,
+  onPointerOut,
+  onClick,
+  onDoubleClick
+}) {
+  const meshRef = useRef();
+
+  useEffect(() => {
+    if (!meshRef.current || nodes.length === 0) return;
+
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      const isHovered = node.id === hoveredNodeId;
+      const isSelected = node.id === selectedNodeId;
+      const isDimmed = activeNodeId && !isHovered && !isSelected && !connectedNodeIds.has(node.id);
+
+      // Position & Scale
+      _tempObj.position.set(node.position[0], node.position[1], node.position[2]);
+      const scaleMultiplier = isHovered ? 1.4 : isSelected ? 1.3 : isDimmed ? 0.75 : 1.0;
+      const r = (node.radius || 0.18) * scaleMultiplier;
+      _tempObj.scale.set(r, r, r);
+      _tempObj.updateMatrix();
+
+      meshRef.current.setMatrixAt(i, _tempObj.matrix);
+
+      // Color
+      let colorHex = node.groupColor;
+      if (viewMode === "Health") {
+        const score = node.complexity?.score ? 100 - node.complexity.score : 92;
+        if (score >= 88) colorHex = "#10b981";
+        else if (score >= 70) colorHex = "#38bdf8";
+        else if (score >= 50) colorHex = "#fbbf24";
+        else colorHex = "#f43f5e";
+      } else if (viewMode === "Dependencies") {
+        colorHex = "#818cf8";
+      }
+
+      _tempColor.set(colorHex);
+      if (isDimmed) {
+        _tempColor.multiplyScalar(0.28);
+      } else if (isHovered || isSelected) {
+        _tempColor.offsetHSL(0, 0, 0.18);
+      }
+      meshRef.current.setColorAt(i, _tempColor);
+    }
+
+    meshRef.current.instanceMatrix.needsUpdate = true;
+    if (meshRef.current.instanceColor) {
+      meshRef.current.instanceColor.needsUpdate = true;
+    }
+  }, [nodes, viewMode, hoveredNodeId, selectedNodeId, activeNodeId, connectedNodeIds]);
+
+  return (
+    <instancedMesh
+      ref={meshRef}
+      args={[SHARED_SPHERE_GEO, SHARED_STANDARD_MAT, nodes.length]}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        if (e.instanceId !== undefined && nodes[e.instanceId]) {
+          onPointerOver(nodes[e.instanceId]);
+        }
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        onPointerOut();
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (e.instanceId !== undefined && nodes[e.instanceId]) {
+          onClick(nodes[e.instanceId]);
+        }
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        if (e.instanceId !== undefined && nodes[e.instanceId]) {
+          onDoubleClick(nodes[e.instanceId]);
+        }
+      }}
+    />
+  );
+});
+
+// Domain Cluster Hub / Anchor Node with rotating halo
+const ClusterHubNode = React.memo(function ClusterHubNode({
   node,
   isHovered,
   isSelected,
-  isDimmed,
-  viewMode = "Architecture",
+  viewMode,
   onPointerOver,
   onPointerOut,
   onClick,
@@ -157,28 +303,13 @@ const GraphNodeMesh = React.memo(function GraphNodeMesh({
   const meshRef = useRef();
 
   useFrame((state, delta) => {
-    if (node.isHub && meshRef.current) {
+    if (meshRef.current) {
       meshRef.current.rotation.y += delta * 0.4;
     }
   });
 
-  const nodeColor = useMemo(() => {
-    if (viewMode === "Health") {
-      const score = node.complexity?.score ? 100 - node.complexity.score : 92;
-      if (score >= 88) return "#10b981"; // Emerald
-      if (score >= 70) return "#38bdf8"; // Cyan
-      if (score >= 50) return "#fbbf24"; // Amber
-      return "#f43f5e"; // Rose
-    }
-    if (viewMode === "Dependencies") {
-      return node.isHub ? "#38bdf8" : "#818cf8";
-    }
-    return node.groupColor;
-  }, [viewMode, node]);
-
-  const scale = isHovered ? 1.4 : isSelected ? 1.3 : 1.0;
-  const emissiveIntensity = isHovered ? 1.3 : isSelected ? 1.0 : node.isHub ? 0.6 : 0.3;
-  const opacity = isDimmed ? 0.25 : 1.0;
+  const nodeColor = node.groupColor;
+  const scale = isHovered ? 1.35 : isSelected ? 1.25 : 1.0;
 
   return (
     <group position={node.position}>
@@ -202,57 +333,95 @@ const GraphNodeMesh = React.memo(function GraphNodeMesh({
           onDoubleClick(node);
         }}
       >
-        <sphereGeometry args={[node.radius, node.isHub ? 20 : 16, node.isHub ? 20 : 16]} />
+        <sphereGeometry args={[node.radius, 20, 20]} />
         <meshStandardMaterial
           color={nodeColor}
           emissive={nodeColor}
-          emissiveIntensity={emissiveIntensity}
-          roughness={0.25}
-          metalness={0.75}
-          transparent
-          opacity={opacity}
+          emissiveIntensity={isHovered ? 1.4 : isSelected ? 1.1 : 0.65}
+          roughness={0.2}
+          metalness={0.8}
         />
       </mesh>
 
-      {/* Outer Halo Ring for Hub / Anchor Nodes */}
-      {node.isHub && (
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[node.radius * 1.3, node.radius * 1.5, 32]} />
-          <meshBasicMaterial
-            color={nodeColor}
-            transparent
-            opacity={0.5}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )}
+      {/* Outer Halo Ring */}
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[node.radius * 1.35, node.radius * 1.55, 32]} />
+        <meshBasicMaterial
+          color={nodeColor}
+          transparent
+          opacity={0.55}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
 
-      {/* Floating 3D Label Tag on Hover or Hub */}
-      {(isHovered || isSelected || node.isHub) && (
-        <Html
-          position={[0, node.radius + 0.25, 0]}
-          center
-          distanceFactor={10}
-          className="pointer-events-none select-none"
+      {/* Hub 3D Label Tag */}
+      <Html
+        position={[0, node.radius + 0.3, 0]}
+        center
+        distanceFactor={11}
+        className="pointer-events-none select-none"
+      >
+        <div
+          className={`px-2.5 py-1 rounded shadow-lg text-[10px] font-mono whitespace-nowrap border backdrop-blur-md transition-all ${
+            isSelected
+              ? "bg-sky-500/90 text-white border-white/50 font-bold"
+              : isHovered
+              ? "bg-slate-900/95 text-sky-300 border-sky-400 font-semibold"
+              : "bg-slate-900/85 text-slate-200 border-slate-700 font-medium"
+          }`}
         >
-          <div
-            className={`px-2 py-0.5 rounded shadow-lg text-[10px] font-mono whitespace-nowrap border backdrop-blur-md transition-all ${
-              isSelected
-                ? "bg-sky-500/90 text-white border-white/40 font-bold"
-                : isHovered
-                ? "bg-slate-900/90 text-sky-300 border-sky-400 font-semibold"
-                : "bg-slate-900/80 text-slate-300 border-slate-700"
-            }`}
-          >
-            {node.name}
-            {viewMode === "Health" && (
-              <span className="ml-1 opacity-80 text-[9px]">
-                ({node.complexity?.score ? 100 - node.complexity.score : 92}% Health)
-              </span>
-            )}
-          </div>
-        </Html>
-      )}
+          {node.name}
+          <span className="ml-1.5 opacity-75 text-[9px] text-sky-300">
+            ({node.fileCount} files)
+          </span>
+        </div>
+      </Html>
+    </group>
+  );
+});
+
+// Level 3 Deep Inspection: Micro-AST Symbols Orbiting Focused File
+const DeepInspectionSymbols = React.memo(function DeepInspectionSymbols({
+  selectedNode
+}) {
+  const groupRef = useRef();
+
+  useFrame((state, delta) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y += delta * 0.3;
+    }
+  });
+
+  if (!selectedNode || !selectedNode.symbols || selectedNode.symbols.length === 0) {
+    return null;
+  }
+
+  const symbols = selectedNode.symbols.slice(0, 4);
+
+  return (
+    <group ref={groupRef} position={selectedNode.position}>
+      {symbols.map((sym, idx) => {
+        const angle = (idx / symbols.length) * Math.PI * 2;
+        const dist = (selectedNode.radius || 0.25) + 0.55;
+        const px = Math.cos(angle) * dist;
+        const py = (idx % 2 === 0 ? 0.2 : -0.2);
+        const pz = Math.sin(angle) * dist;
+
+        return (
+          <group key={idx} position={[px, py, pz]}>
+            <mesh scale={0.06}>
+              <sphereGeometry args={[1, 12, 12]} />
+              <meshBasicMaterial color="#38bdf8" />
+            </mesh>
+            <Html center distanceFactor={8} className="pointer-events-none select-none">
+              <div className="px-1.5 py-0.5 rounded bg-slate-950/90 border border-sky-500/40 text-[8px] font-mono text-sky-200 whitespace-nowrap shadow-md">
+                <span className="text-slate-400 mr-1">{sym.kind}:</span>
+                <strong>{sym.name}</strong>
+              </div>
+            </Html>
+          </group>
+        );
+      })}
     </group>
   );
 });
@@ -263,7 +432,6 @@ function ClusterGroundIndicators({ groupConfig }) {
     <group position={[0, -4.5, 0]}>
       {Object.entries(groupConfig).map(([name, conf]) => (
         <group key={name} position={[conf.center[0], 0, conf.center[2]]}>
-          {/* Subtle glowing ground disc */}
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
             <circleGeometry args={[2.2, 32]} />
             <meshBasicMaterial
@@ -273,7 +441,6 @@ function ClusterGroundIndicators({ groupConfig }) {
               depthWrite={false}
             />
           </mesh>
-          {/* Ground Ring */}
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[2.15, 2.2, 32]} />
             <meshBasicMaterial
@@ -283,7 +450,6 @@ function ClusterGroundIndicators({ groupConfig }) {
               depthWrite={false}
             />
           </mesh>
-          {/* Domain 3D Label */}
           <Html position={[0, 0.1, 0]} center distanceFactor={14} className="pointer-events-none">
             <span
               className="text-[11px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-900/80 border"
@@ -299,9 +465,13 @@ function ClusterGroundIndicators({ groupConfig }) {
 }
 
 /**
- * Main 3D Codebase Visualizer Component
+ * Main 3D Codebase Visualizer Component with Level of Detail (LOD) & Instancing
  */
-export default function CodebaseVisualizer3D({ analysis, repo, initialViewMode = "Architecture" }) {
+export default function CodebaseVisualizer3D({
+  analysis,
+  repo,
+  initialViewMode = "Architecture"
+}) {
   const [selectedGroup, setSelectedGroup] = useState("All");
   const [viewMode, setViewMode] = useState(initialViewMode);
   const [searchQuery, setSearchQuery] = useState("");
@@ -312,27 +482,71 @@ export default function CodebaseVisualizer3D({ analysis, repo, initialViewMode =
   const [resetTrigger, setResetTrigger] = useState(0);
   const [targetFocus, setTargetFocus] = useState(null);
 
+  // LOD & Performance States
+  const [activeLodLevel, setActiveLodLevel] = useState(LOD_LEVELS.MODULE);
+  const [manualLodLock, setManualLodLock] = useState(null); // null = Auto camera driven
+  const [measuredFps, setMeasuredFps] = useState(60);
+  const [isEcoMode, setIsEcoMode] = useState(false);
+
   const containerRef = useRef(null);
   const controlsRef = useRef(null);
 
-  // 1. Build Graph Layout from analysis and repo
-  const graph = useMemo(() => {
-    return buildGraphLayout(analysis, repo);
+  // 1. Build Graph Layout with full repository support (no 10-node truncation)
+  const fullGraph = useMemo(() => {
+    return buildGraphLayout(analysis, repo, { maxNodes: 10000 });
   }, [analysis, repo]);
 
-  const { nodes, nodesById, edges, linePositions } = graph;
+  // 2. Camera distance change handler with hysteresis guard
+  const handleDistanceChange = useCallback((distance) => {
+    if (manualLodLock !== null) return;
+    setActiveLodLevel((currentLOD) => determineLODLevel(distance, currentLOD));
+  }, [manualLodLock]);
 
-  // Filter nodes based on selected group and search query
-  const filteredNodes = useMemo(() => {
-    return nodes.filter((node) => {
-      const matchGroup = selectedGroup === "All" || node.group === selectedGroup;
-      const matchSearch =
-        !searchQuery.trim() ||
-        node.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        node.path.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchGroup && matchSearch;
+  // 3. Adaptive FPS Tracker handler
+  const handleFpsChange = useCallback((fps) => {
+    setMeasuredFps(fps);
+    if (fps < 32 && !isEcoMode) {
+      setIsEcoMode(true);
+    } else if (fps > 52 && isEcoMode) {
+      setIsEcoMode(false);
+    }
+  }, [isEcoMode]);
+
+  // 4. Effective LOD Level based on manual lock or camera distance
+  const currentLOD = manualLodLock !== null ? manualLodLock : activeLodLevel;
+
+  // 5. Filter graph for active LOD level, group, and search query
+  const filteredGraph = useMemo(() => {
+    return filterGraphForLOD(fullGraph, currentLOD, {
+      activeCluster: selectedGroup,
+      searchQuery
     });
-  }, [nodes, selectedGroup, searchQuery]);
+  }, [fullGraph, currentLOD, selectedGroup, searchQuery]);
+
+  const { nodes: visibleNodes, edges: visibleEdges, linePositions } = filteredGraph;
+
+  // Partition visible nodes into Hubs and Regular file nodes for instancing
+  const { hubNodes, fileNodes } = useMemo(() => {
+    const hubs = [];
+    const files = [];
+    visibleNodes.forEach((n) => {
+      if (n.isHub) hubs.push(n);
+      else files.push(n);
+    });
+    return { hubNodes: hubs, fileNodes: files };
+  }, [visibleNodes]);
+
+  // Connected node set for active selection dimming
+  const activeNodeId = hoveredNode?.id || selectedNode?.id;
+  const connectedNodeIds = useMemo(() => {
+    const set = new Set();
+    if (!activeNodeId) return set;
+    visibleEdges.forEach((e) => {
+      if (e.fromId === activeNodeId) set.add(e.toId);
+      if (e.toId === activeNodeId) set.add(e.fromId);
+    });
+    return set;
+  }, [activeNodeId, visibleEdges]);
 
   // Pointer hover handlers
   const handlePointerOver = useCallback((node) => {
@@ -374,8 +588,13 @@ export default function CodebaseVisualizer3D({ analysis, repo, initialViewMode =
     }
   };
 
-  // Active node for edge highlighting
-  const activeNodeId = hoveredNode?.id || selectedNode?.id;
+  // LOD Labels
+  const lodLabels = {
+    [LOD_LEVELS.OVERVIEW]: "L0 Overview",
+    [LOD_LEVELS.MODULE]: "L1 Module",
+    [LOD_LEVELS.FILE]: "L2 File Detail",
+    [LOD_LEVELS.DEEP]: "L3 Deep AST"
+  };
 
   return (
     <div
@@ -418,7 +637,7 @@ export default function CodebaseVisualizer3D({ analysis, repo, initialViewMode =
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            All ({nodes.length})
+            All ({fullGraph.nodes.length})
           </button>
 
           {/* Groups */}
@@ -458,7 +677,7 @@ export default function CodebaseVisualizer3D({ analysis, repo, initialViewMode =
               placeholder="Search 3D AST..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-7 pr-3 py-1 bg-slate-900/90 border border-slate-800 rounded-lg text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 w-36 sm:w-44 transition-all"
+              className="pl-7 pr-3 py-1 bg-slate-900/90 border border-slate-800 rounded-lg text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 w-32 sm:w-40 transition-all"
             />
             {searchQuery && (
               <button
@@ -471,8 +690,44 @@ export default function CodebaseVisualizer3D({ analysis, repo, initialViewMode =
           </div>
         </div>
 
-        {/* Right: Camera & View Action Tools */}
+        {/* Right: LOD Level Selector & Camera Action Tools */}
         <div className="flex items-center gap-1.5 pointer-events-auto bg-[#0B0F17]/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 shadow-xl">
+          {/* LOD Level Pill / Manual Selector */}
+          <div className="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-lg border border-slate-800/80 mr-1">
+            <button
+              onClick={() => setManualLodLock(null)}
+              className={`px-2 py-0.5 rounded text-[11px] font-mono transition-all ${
+                manualLodLock === null
+                  ? "bg-sky-500/20 text-sky-300 font-semibold border border-sky-500/30"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+              title="Automatic Camera LOD"
+            >
+              Auto
+            </button>
+            {[
+              { level: LOD_LEVELS.OVERVIEW, label: "L0" },
+              { level: LOD_LEVELS.MODULE, label: "L1" },
+              { level: LOD_LEVELS.FILE, label: "L2" },
+              { level: LOD_LEVELS.DEEP, label: "L3" }
+            ].map(({ level, label }) => (
+              <button
+                key={level}
+                onClick={() => setManualLodLock(level)}
+                className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-all ${
+                  currentLOD === level
+                    ? "bg-purple-500/20 text-purple-300 font-bold border border-purple-500/40"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+                title={lodLabels[level]}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="h-4 w-px bg-slate-800 mx-0.5"></div>
+
           <button
             onClick={handleResetCamera}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
@@ -526,7 +781,11 @@ export default function CodebaseVisualizer3D({ analysis, repo, initialViewMode =
         <Canvas
           camera={{ position: [0, 3.5, 14], fov: 48 }}
           className="cursor-grab active:cursor-grabbing"
-          gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+          gl={{
+            antialias: !isEcoMode,
+            alpha: false,
+            powerPreference: "high-performance"
+          }}
           onPointerMissed={() => setSelectedNode(null)}
         >
           {/* Background color */}
@@ -544,40 +803,86 @@ export default function CodebaseVisualizer3D({ analysis, repo, initialViewMode =
           {/* Domain Cluster Ground Rings */}
           <ClusterGroundIndicators groupConfig={GROUP_CONFIG} />
 
-          {/* Batched Wireframe Edges (1 draw call) */}
+          {/* Batched Wireframe Edges across LOD levels */}
           <GraphLines
             linePositions={linePositions}
-            edges={edges}
+            edges={visibleEdges}
             activeNodeId={activeNodeId}
-            nodesById={nodesById}
+            isEcoMode={isEcoMode}
           />
 
-          {/* Nodes */}
-          <group>
-            {filteredNodes.map((node) => {
-              const isHovered = hoveredNode?.id === node.id;
-              const isSelected = selectedNode?.id === node.id;
-              const isDimmed = activeNodeId && !isHovered && !isSelected && !edges.some(
-                (e) => (e.fromId === activeNodeId && e.toId === node.id) ||
-                       (e.toId === activeNodeId && e.fromId === node.id)
-              );
+          {/* High-Performance Instanced File Nodes (1 draw call for thousands of files) */}
+          {fileNodes.length > 0 && (
+            <InstancedFileNodes
+              nodes={fileNodes}
+              viewMode={viewMode}
+              hoveredNodeId={hoveredNode?.id}
+              selectedNodeId={selectedNode?.id}
+              activeNodeId={activeNodeId}
+              connectedNodeIds={connectedNodeIds}
+              onPointerOver={handlePointerOver}
+              onPointerOut={handlePointerOut}
+              onClick={handleClick}
+              onDoubleClick={handleDoubleClick}
+            />
+          )}
 
-              return (
-                <GraphNodeMesh
-                  key={node.id}
-                  node={node}
-                  isHovered={isHovered}
-                  isSelected={isSelected}
-                  isDimmed={isDimmed}
-                  viewMode={viewMode}
-                  onPointerOver={handlePointerOver}
-                  onPointerOut={handlePointerOut}
-                  onClick={handleClick}
-                  onDoubleClick={handleDoubleClick}
-                />
-              );
-            })}
+          {/* Cluster Anchor / Hub Nodes */}
+          <group>
+            {hubNodes.map((hub) => (
+              <ClusterHubNode
+                key={hub.id}
+                node={hub}
+                isHovered={hoveredNode?.id === hub.id}
+                isSelected={selectedNode?.id === hub.id}
+                viewMode={viewMode}
+                onPointerOver={handlePointerOver}
+                onPointerOut={handlePointerOut}
+                onClick={handleClick}
+                onDoubleClick={handleDoubleClick}
+              />
+            ))}
           </group>
+
+          {/* Level 3 Deep Inspection: AST Symbols for focused node */}
+          {selectedNode && (
+            <DeepInspectionSymbols selectedNode={selectedNode} />
+          )}
+
+          {/* Selected/Hovered Node Halo Indicator & Tag */}
+          {selectedNode && !selectedNode.isHub && (
+            <group position={selectedNode.position}>
+              <mesh rotation={[Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[selectedNode.radius * 1.3, selectedNode.radius * 1.5, 24]} />
+                <meshBasicMaterial color="#38bdf8" transparent opacity={0.8} side={THREE.DoubleSide} />
+              </mesh>
+              <Html
+                position={[0, selectedNode.radius + 0.28, 0]}
+                center
+                distanceFactor={10}
+                className="pointer-events-none select-none"
+              >
+                <div className="px-2 py-0.5 rounded shadow-lg text-[10px] font-mono whitespace-nowrap bg-sky-500/90 text-white border border-white/40 font-bold backdrop-blur-md">
+                  {selectedNode.name}
+                </div>
+              </Html>
+            </group>
+          )}
+
+          {hoveredNode && !hoveredNode.isHub && hoveredNode.id !== selectedNode?.id && (
+            <group position={hoveredNode.position}>
+              <Html
+                position={[0, hoveredNode.radius + 0.24, 0]}
+                center
+                distanceFactor={10}
+                className="pointer-events-none select-none"
+              >
+                <div className="px-2 py-0.5 rounded shadow-md text-[10px] font-mono whitespace-nowrap bg-slate-900/95 text-sky-300 border border-sky-400 font-semibold backdrop-blur-md">
+                  {hoveredNode.name}
+                </div>
+              </Html>
+            </group>
+          )}
 
           {/* Orbit Controls */}
           <OrbitControls
@@ -598,6 +903,13 @@ export default function CodebaseVisualizer3D({ analysis, repo, initialViewMode =
             resetTrigger={resetTrigger}
             controlsRef={controlsRef}
           />
+
+          {/* Camera LOD & Performance Tracker */}
+          <CameraLODTracker
+            controlsRef={controlsRef}
+            onDistanceChange={handleDistanceChange}
+            onFpsChange={handleFpsChange}
+          />
         </Canvas>
       </div>
 
@@ -605,17 +917,27 @@ export default function CodebaseVisualizer3D({ analysis, repo, initialViewMode =
       <div className="absolute bottom-4 left-4 z-20 pointer-events-none">
         <div className="inline-flex items-center gap-3 px-3 py-1.5 rounded-xl bg-[#0B0F17]/90 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-300 shadow-xl">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                measuredFps >= 50 ? "bg-emerald-400" : measuredFps >= 30 ? "bg-amber-400" : "bg-rose-400"
+              } animate-pulse`}
+            ></span>
             <span className="font-semibold text-white">Spatial AST</span>
           </div>
           <span className="text-slate-500">&bull;</span>
-          <span>{filteredNodes.length} Nodes</span>
+          <span className="text-sky-300 font-semibold">{lodLabels[currentLOD]}</span>
           <span className="text-slate-500">&bull;</span>
-          <span>{edges.length} Interconnects</span>
+          <span>{visibleNodes.length} / {fullGraph.nodes.length} Nodes</span>
+          <span className="text-slate-500">&bull;</span>
+          <span>{visibleEdges.length} Edges</span>
+          <span className="text-slate-500">&bull;</span>
+          <span className={`${measuredFps >= 50 ? "text-emerald-400" : "text-amber-400"}`}>
+            {measuredFps} FPS {isEcoMode && "(Eco)"}
+          </span>
           {hoveredNode && (
             <>
               <span className="text-slate-500">&bull;</span>
-              <span className="text-sky-300 font-medium truncate max-w-[150px]">
+              <span className="text-sky-300 font-medium truncate max-w-[140px]">
                 {hoveredNode.name}
               </span>
             </>
@@ -626,7 +948,7 @@ export default function CodebaseVisualizer3D({ analysis, repo, initialViewMode =
       {/* Floating Bottom Right Navigation Hint */}
       <div className="absolute bottom-4 right-4 z-20 pointer-events-none hidden md:block">
         <div className="px-3 py-1.5 rounded-xl bg-[#0B0F17]/80 backdrop-blur-md border border-slate-800/80 text-[10px] font-mono text-slate-400">
-          Double-click node to focus &bull; Drag to rotate &bull; Scroll to zoom
+          Double-click to focus &bull; Drag to rotate &bull; Scroll to zoom LOD
         </div>
       </div>
 
@@ -637,8 +959,8 @@ export default function CodebaseVisualizer3D({ analysis, repo, initialViewMode =
           onClose={() => setSelectedNode(null)}
           onFocusNode={handleFocusNode}
           onSelectNode={handleClick}
-          nodesById={nodesById}
-          edges={edges}
+          nodesById={fullGraph.nodesById}
+          edges={visibleEdges}
           groupConfig={GROUP_CONFIG}
         />
       </div>

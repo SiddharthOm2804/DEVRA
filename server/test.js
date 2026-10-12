@@ -8,6 +8,7 @@ import { runRealtimeStreamingTests } from "./tests/realtimeStreaming.test.js";
 import { runRbacTests } from "./tests/rbac.test.js";
 import { runTreeSitterTests } from "./tests/treeSitter.test.js";
 import { runWebhookTests } from "./tests/webhook.test.js";
+import { runThreeJsLodTests } from "./tests/threeJsLod.test.js";
 import { eventBus } from "./src/services/realtime/eventBus.js";
 
 async function runTests() {
@@ -148,6 +149,11 @@ async function runTests() {
   const webhookResults = await runWebhookTests();
   passed += webhookResults.passed;
   failed += webhookResults.failed;
+
+  // Run Three.js Level of Detail (LOD) & Large Graph test suite
+  const lodResults = await runThreeJsLodTests();
+  passed += lodResults.passed;
+  failed += lodResults.failed;
 
   await eventBus.close();
 
