@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { ApiService, AgentSessionData, ProposedChange } from "../services/apiService";
 import { DevPilotPreviewProvider } from "../services/previewProvider";
+import { DevraStatusBarManager } from "../services/statusBarManager";
 
 export async function agentModeCommand(): Promise<void> {
   const apiService = ApiService.getInstance();
@@ -68,6 +69,13 @@ export async function agentModeCommand(): Promise<void> {
 
   panel.webview.html = getLoadingHtml(goalPrompt, "Analyzing repository architecture and synthesizing implementation plan...");
 
+  const statusBar = DevraStatusBarManager.getInstance();
+  statusBar.updateStatus({
+    state: "agent_running",
+    step: "Synthesizing plan",
+    percent: 15
+  });
+
   let currentSession: AgentSessionData | null = null;
 
   try {
@@ -80,11 +88,20 @@ export async function agentModeCommand(): Promise<void> {
     currentSession = planRes.session;
     panel.webview.html = getPlanHtml(currentSession);
 
+    statusBar.updateStatus({
+      state: "ready",
+      message: "Plan ready for approval"
+    });
+
     vscode.window.showInformationMessage(
       `DevPilot Agent: Implementation plan ready for "${goalPrompt}". Awaiting your approval.`,
       "Review Plan"
     );
   } catch (err: any) {
+    statusBar.updateStatus({
+      state: "agent_failed",
+      error: err.message
+    });
     panel.webview.html = getErrorHtml(goalPrompt, err.message);
     vscode.window.showErrorMessage(`DevPilot Agent Error: ${err.message}`);
     return;
@@ -101,6 +118,13 @@ export async function agentModeCommand(): Promise<void> {
           "Plan approved! Generating proposed code changes, diff previews, and validating safeguards..."
         );
 
+        statusBar.updateStatus({
+          state: "agent_running",
+          taskId: currentSession._id,
+          step: "Generating code patches",
+          percent: 50
+        });
+
         try {
           const changeRes = await apiService.approveAgentPlan(currentSession._id);
           if (!changeRes.success || !changeRes.session) {
@@ -110,11 +134,22 @@ export async function agentModeCommand(): Promise<void> {
           currentSession = changeRes.session;
           panel.webview.html = getDiffPreviewHtml(currentSession);
 
+          statusBar.updateStatus({
+            state: "agent_completed",
+            taskId: currentSession._id,
+            message: "Patches ready for review"
+          });
+
           vscode.window.showInformationMessage(
             `DevPilot Agent: Proposed code changes ready (${currentSession.proposedChanges.length} files). Review diffs before applying.`,
             "View Diffs"
           );
         } catch (err: any) {
+          statusBar.updateStatus({
+            state: "agent_failed",
+            taskId: currentSession._id,
+            error: err.message
+          });
           panel.webview.html = getErrorHtml(currentSession.goalPrompt, err.message);
           vscode.window.showErrorMessage(`DevPilot Agent Error: ${err.message}`);
         }
@@ -125,6 +160,11 @@ export async function agentModeCommand(): Promise<void> {
         try {
           const res = await apiService.rejectAgentChanges(currentSession._id, "Plan rejected by user");
           if (res.session) currentSession = res.session;
+          statusBar.updateStatus({
+            state: "agent_cancelled",
+            taskId: currentSession._id,
+            message: "Plan rejected by user"
+          });
           panel.webview.html = getCompletedHtml(currentSession, "rejected", "Implementation plan was rejected. No changes were made.");
           vscode.window.showInformationMessage("DevPilot Agent: Plan rejected. Project files remain untouched.");
         } catch (err: any) {

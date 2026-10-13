@@ -107,6 +107,9 @@ jobs:
       - name: Compile VS Code Extension TypeScript
         run: npm run build:extension
 
+      - name: Run VS Code Extension Test Suite
+        run: npm --prefix extension test
+
   e2e-test:
     name: Playwright End-to-End Suite
     runs-on: ubuntu-latest
