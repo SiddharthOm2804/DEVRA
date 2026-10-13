@@ -267,11 +267,12 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Work Email Field */}
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5 font-sans">
+                <label htmlFor="work-email" className="text-xs font-medium text-slate-300 flex items-center gap-1.5 font-sans">
                   <Mail className="w-3.5 h-3.5 text-slate-500" />
                   <span>Work Email</span>
                 </label>
                 <input
+                  id="work-email"
                   type="email"
                   required
                   autoComplete="email"
@@ -285,7 +286,7 @@ export default function LoginPage() {
               {/* Password Field with Show/Hide Toggle */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5 font-sans">
+                  <label htmlFor="password-input" className="text-xs font-medium text-slate-300 flex items-center gap-1.5 font-sans">
                     <Lock className="w-3.5 h-3.5 text-slate-500" />
                     <span>Password</span>
                   </label>
@@ -303,6 +304,7 @@ export default function LoginPage() {
 
                 <div className="relative">
                   <input
+                    id="password-input"
                     type={showPassword ? "text" : "password"}
                     required
                     autoComplete="current-password"

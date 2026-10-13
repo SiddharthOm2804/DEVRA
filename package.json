@@ -20,9 +20,12 @@
     "build:extension": "npm --prefix extension run compile",
     "start": "npm --prefix server start",
     "test": "npm --prefix server test",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report",
     "install:all": "npm install && npm --prefix server install && npm --prefix client install && npm --prefix extension install"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "concurrently": "^9.1.2"
   },
   "keywords": [
