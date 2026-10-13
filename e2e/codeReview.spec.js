@@ -16,7 +16,7 @@ test.describe("AI Code Review and GitHub Webhook Visibility Workflows", () => {
   test("Code Review page loads with review engine header and action buttons", async ({ page }) => {
     await expect(page.getByRole("heading", { name: /AI Code Review Engine/i })).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole("button", { name: /New Code Review/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Refresh/i })).toBeVisible();
+    await expect(page.getByText("Refresh", { exact: true })).toBeVisible();
   });
 
   test("Review creator drawer opens and displays pre-packaged code templates", async ({ page }) => {

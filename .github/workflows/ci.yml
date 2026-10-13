@@ -106,3 +106,66 @@ jobs:
 
       - name: Compile VS Code Extension TypeScript
         run: npm run build:extension
+
+  e2e-test:
+    name: Playwright End-to-End Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [backend-test, frontend-build]
+
+    services:
+      redis:
+        image: redis/redis-stack-server:latest
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium with System Dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E Suite
+        env:
+          CI: true
+          NODE_ENV: test
+          PORT: 5000
+          MONGODB_URI: mongodb://localhost:27017/devra_e2e
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          VECTOR_STORE: redis
+          JWT_SECRET: test_e2e_jwt_secret_devra_2026
+        run: npm run test:e2e
+
+      - name: Upload Playwright Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
