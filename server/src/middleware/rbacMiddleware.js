@@ -217,9 +217,12 @@ export function requireRepositoryAccess(requiredPermission = PERMISSIONS.REPO_RE
       const userRole = req.user.role || ROLES.DEVELOPER;
       const isOwner = repository.userId.toString() === req.user._id.toString();
       const isAdmin = userRole === ROLES.ADMIN;
+      const isPublic = repository.visibility === "public" && !repository.isPrivate;
 
-      // Allow access if admin, owner, or if role possesses the required permission
-      if (!isOwner && !isAdmin && !hasPermission(userRole, requiredPermission)) {
+      // Allow access if admin, or if owner with required permission, or if public for read-only actions
+      const canAccess = isAdmin || isOwner || (isPublic && requiredPermission === PERMISSIONS.REPO_READ);
+
+      if (!canAccess || !hasPermission(userRole, requiredPermission)) {
         return res.status(403).json({
           success: false,
           message: "Forbidden. Access denied for this repository."
@@ -275,7 +278,8 @@ export function requireTaskAccess(requiredPermission = PERMISSIONS.AGENT_PLAN) {
       const isOwner = session.userId.toString() === req.user._id.toString();
       const isAdmin = userRole === ROLES.ADMIN;
 
-      if (!isOwner && !isAdmin && !hasPermission(userRole, requiredPermission)) {
+      // Agent sessions are strictly private to the session owner (and platform admins)
+      if ((!isOwner && !isAdmin) || !hasPermission(userRole, requiredPermission)) {
         return res.status(403).json({
           success: false,
           message: "Forbidden. Access denied for this Agent session."

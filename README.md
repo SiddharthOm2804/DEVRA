@@ -36,6 +36,7 @@ DevPilot/
 - **Node.js**: v20.x or higher
 - **npm**: v10.x or higher
 - **MongoDB**: v6.0+ (Local or MongoDB Atlas)
+- **Redis**: v7.0+ (Redis Stack recommended for persistent HNSW vector search)
 - **AI API Key**: Google Gemini (`AI_API_KEY`) or OpenAI Key
 
 ### 1. Installation
@@ -51,7 +52,7 @@ cp .env.example .env
 cp server/.env.example server/.env
 cp client/.env.example client/.env
 ```
-Ensure `server/.env` contains your `JWT_SECRET` and `AI_API_KEY`.
+Ensure `server/.env` contains your `JWT_SECRET`, `AI_API_KEY`, `MONGODB_URI`, and `REDIS_HOST`.
 
 ### 3. Launch Development Environment
 Run both backend server and frontend client concurrently:
@@ -61,8 +62,22 @@ npm run dev
 - **Web Cockpit**: [http://localhost:5173](http://localhost:5173)
 - **API Server**: [http://localhost:5000](http://localhost:5000)
 - **Health Heartbeat**: [http://localhost:5000/api/health](http://localhost:5000/api/health)
+- **Readiness Probe**: [http://localhost:5000/api/health/ready](http://localhost:5000/api/health/ready)
+- **Prometheus Metrics**: [http://localhost:5000/metrics](http://localhost:5000/metrics)
 
-### 4. Build VS Code Extension
+### 4. Running Automated Tests
+```bash
+# Run backend unit, integration, and observability test suite (72 tests)
+npm test
+
+# Run VS Code extension unit tests (10 tests)
+npm --prefix extension test
+
+# Run Playwright End-to-End browser suite
+npm run test:e2e
+```
+
+### 5. Build VS Code Extension
 ```bash
 npm run build:extension
 ```
@@ -76,7 +91,7 @@ In VS Code, press `F5` or run "Debug: Start Debugging" in the extension folder t
 ```bash
 docker compose up -d --build
 ```
-Orchestrates MongoDB, Node API server, and Nginx web client.
+Orchestrates MongoDB 7.0, Redis Stack Server (RediSearch HNSW vectors), Node API server, and Nginx web client.
 
 ### Option B: Bare Metal / VM (PM2)
 ```bash

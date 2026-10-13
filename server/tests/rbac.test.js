@@ -182,6 +182,63 @@ export async function runRbacTests() {
     assert.strictEqual(isNextCalled(), true);
   });
 
+  // 8. Negative Authorization: User A cannot read User B's private repository
+  await test("Negative Authorization: User A cannot access User B's private repository", async () => {
+    const userA = { _id: "64f1a2b3c4d5e6f7a8b9c001", role: ROLES.DEVELOPER };
+    const userBId = "64f1a2b3c4d5e6f7a8b9c002";
+    const privateRepo = {
+      _id: "64f1a2b3c4d5e6f7a8b9c099",
+      userId: userBId,
+      visibility: "private",
+      isPrivate: true
+    };
+
+    // Mock Repository.findById for this test
+    const origFindById = Repository.findById;
+    Repository.findById = async () => privateRepo;
+
+    try {
+      const { req, res, next, isNextCalled } = createMockReqRes({
+        user: userA,
+        params: { id: "64f1a2b3c4d5e6f7a8b9c099" }
+      });
+
+      await requireRepositoryAccess(PERMISSIONS.REPO_READ)(req, res, next);
+      assert.strictEqual(isNextCalled(), false, "User A must not access User B private repo");
+      assert.strictEqual(res.statusCode, 403, "Expected 403 Forbidden");
+    } finally {
+      Repository.findById = origFindById;
+    }
+  });
+
+  // 9. Negative Authorization: User A cannot access User B's private Agent session
+  await test("Negative Authorization: User A cannot access User B's private Agent Mode task", async () => {
+    const userA = { _id: "64f1a2b3c4d5e6f7a8b9c001", role: ROLES.DEVELOPER };
+    const userBId = "64f1a2b3c4d5e6f7a8b9c002";
+    const privateSession = {
+      _id: "64f1a2b3c4d5e6f7a8b9c088",
+      userId: userBId,
+      goalPrompt: "Secret feature",
+      status: "planning"
+    };
+
+    const origFindById = AgentSession.findById;
+    AgentSession.findById = async () => privateSession;
+
+    try {
+      const { req, res, next, isNextCalled } = createMockReqRes({
+        user: userA,
+        params: { id: "64f1a2b3c4d5e6f7a8b9c088" }
+      });
+
+      await requireTaskAccess(PERMISSIONS.AGENT_PLAN)(req, res, next);
+      assert.strictEqual(isNextCalled(), false, "User A must not access User B agent task");
+      assert.strictEqual(res.statusCode, 403, "Expected 403 Forbidden");
+    } finally {
+      AgentSession.findById = origFindById;
+    }
+  });
+
   return { passed, failed };
 }
 

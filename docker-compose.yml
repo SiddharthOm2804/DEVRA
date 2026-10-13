@@ -42,6 +42,8 @@ services:
       - VECTOR_STORE=redis
       - CLIENT_URL=http://localhost:80
       - JWT_SECRET=${JWT_SECRET:-devpilot_production_jwt_secret_32chars_key!}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-devra_webhook_secret_default_2026}
+      - METRICS_AUTH_TOKEN=${METRICS_AUTH_TOKEN:-}
       - AI_PROVIDER=${AI_PROVIDER:-gemini}
       - AI_API_KEY=${AI_API_KEY:-}
     depends_on:
