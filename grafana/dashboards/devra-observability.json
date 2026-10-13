@@ -1,0 +1,149 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "System Overview & In-Flight Operations",
+      "type": "row"
+    },
+    {
+      "id": 2,
+      "title": "HTTP In-Flight Requests",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "expr": "devra_http_in_flight_requests",
+          "legendFormat": "In Flight"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Active Agent Tasks",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "targets": [
+        {
+          "expr": "devra_agent_active_tasks",
+          "legendFormat": "Active Tasks"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Active SSE Streams",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "targets": [
+        {
+          "expr": "devra_sse_active_connections",
+          "legendFormat": "SSE Connections"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "MongoDB Ready State",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "targets": [
+        {
+          "expr": "devra_dependency_health_status{dependency=\"mongodb\"}",
+          "legendFormat": "MongoDB"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 6,
+      "title": "HTTP Traffic & Latencies",
+      "type": "row"
+    },
+    {
+      "id": 7,
+      "title": "HTTP Request Rate (by status class)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "sum by (status_class) (rate(devra_http_requests_total[1m]))",
+          "legendFormat": "{{status_class}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "HTTP Request Latency (p95 & p99)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(devra_http_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "p95 Latency"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(devra_http_request_duration_seconds_bucket[5m])))",
+          "legendFormat": "p99 Latency"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 9,
+      "title": "Agent Mode & RAG Performance",
+      "type": "row"
+    },
+    {
+      "id": 10,
+      "title": "Agent Tasks Duration (p95)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, task_type) (rate(devra_agent_task_duration_seconds_bucket[5m])))",
+          "legendFormat": "Agent {{task_type}} p95"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "RAG Retrieval & Vector Store Latency (p95)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, backend) (rate(devra_rag_retrieval_duration_seconds_bucket[5m])))",
+          "legendFormat": "RAG {{backend}} p95"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, backend) (rate(devra_vector_store_operation_duration_seconds_bucket[5m])))",
+          "legendFormat": "VectorStore {{backend}} p95"
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["devra", "observability", "prometheus", "otel"],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "DEVRA - Production Observability Dashboard",
+  "uid": "devra-observability",
+  "version": 1
+}

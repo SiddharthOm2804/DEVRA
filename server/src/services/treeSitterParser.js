@@ -3,6 +3,11 @@ import fs from "fs";
 import { shouldIgnorePath } from "./codeAnalysisService.js";
 import { chunkFileContent } from "./retriever.js";
 import logger from "../utils/logger.js";
+import {
+  treeSitterParseOperationsTotal,
+  treeSitterParseDurationSeconds
+} from "../metrics/prometheus.js";
+import { withSpan } from "../metrics/opentelemetry.js";
 
 // Maximum file size for AST parsing (500 KB safeguard)
 const MAX_FILE_SIZE_BYTES = 500 * 1024;
@@ -158,33 +163,45 @@ export async function extractSyntaxChunks(filePath, fileName, content, language 
     return [];
   }
 
-  // 2. Safeguard: File size boundary
-  const byteLength = Buffer.byteLength(content || "", "utf8");
-  if (byteLength > MAX_FILE_SIZE_BYTES) {
-    logger.warn(`[TreeSitter] File '${filePath}' exceeds 500KB limit (${byteLength} bytes). Falling back to line-window chunking.`);
-    return chunkFileContent(filePath, fileName, content, language);
-  }
+  const startTime = Date.now();
+  let status = "success";
+  const langKey = detectTreeSitterLanguage(filePath) || language.toLowerCase() || "unknown";
 
-  // 3. Perform Syntax-Aware Symbol Extraction
   try {
-    const isReady = await initTreeSitter();
-    const langKey = detectTreeSitterLanguage(filePath);
-
-    if (!isReady || !langKey) {
-      return extractSyntaxSymbolsRegex(filePath, fileName, content, language);
+    // 2. Safeguard: File size boundary
+    const byteLength = Buffer.byteLength(content || "", "utf8");
+    if (byteLength > MAX_FILE_SIZE_BYTES) {
+      logger.warn(`[TreeSitter] File '${filePath}' exceeds 500KB limit (${byteLength} bytes). Falling back to line-window chunking.`);
+      return chunkFileContent(filePath, fileName, content, language);
     }
 
-    // High-performance regex + AST extraction
-    const syntaxChunks = extractSyntaxSymbolsRegex(filePath, fileName, content, language);
-    if (syntaxChunks && syntaxChunks.length > 0) {
-      return syntaxChunks;
+    // 3. Perform Syntax-Aware Symbol Extraction
+    try {
+      const isReady = await initTreeSitter();
+
+      if (!isReady || !langKey) {
+        return extractSyntaxSymbolsRegex(filePath, fileName, content, language);
+      }
+
+      // High-performance regex + AST extraction
+      const syntaxChunks = extractSyntaxSymbolsRegex(filePath, fileName, content, language);
+      if (syntaxChunks && syntaxChunks.length > 0) {
+        return syntaxChunks;
+      }
+    } catch (err) {
+      logger.warn(`[TreeSitter] AST extraction error on '${filePath}': ${err.message}. Using line-window fallback.`);
     }
+
+    // 4. Fallback to standard line-window chunking
+    return chunkFileContent(filePath, fileName, content, language);
   } catch (err) {
-    logger.warn(`[TreeSitter] AST extraction error on '${filePath}': ${err.message}. Using line-window fallback.`);
+    status = "error";
+    throw err;
+  } finally {
+    const duration = (Date.now() - startTime) / 1000;
+    treeSitterParseOperationsTotal.inc({ language: langKey, status });
+    treeSitterParseDurationSeconds.observe({ language: langKey }, duration);
   }
-
-  // 4. Fallback to standard line-window chunking
-  return chunkFileContent(filePath, fileName, content, language);
 }
 
 export default {

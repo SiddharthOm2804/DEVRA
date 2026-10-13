@@ -9,6 +9,7 @@ import { runRbacTests } from "./tests/rbac.test.js";
 import { runTreeSitterTests } from "./tests/treeSitter.test.js";
 import { runWebhookTests } from "./tests/webhook.test.js";
 import { runThreeJsLodTests } from "./tests/threeJsLod.test.js";
+import { runObservabilityTests } from "./tests/observability.test.js";
 import { eventBus } from "./src/services/realtime/eventBus.js";
 
 async function runTests() {
@@ -154,6 +155,11 @@ async function runTests() {
   const lodResults = await runThreeJsLodTests();
   passed += lodResults.passed;
   failed += lodResults.failed;
+
+  // Run Observability (Prometheus & OpenTelemetry) test suite
+  const obsResults = await runObservabilityTests();
+  passed += obsResults.passed;
+  failed += obsResults.failed;
 
   await eventBus.close();
 

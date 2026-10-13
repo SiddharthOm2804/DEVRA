@@ -4,6 +4,12 @@ import Analysis from "../models/Analysis.js";
 import { config } from "../config/env.js";
 import { eventBus } from "./realtime/eventBus.js";
 import { EVENT_TYPES } from "./realtime/eventContract.js";
+import {
+  agentTasksTotal,
+  agentTaskDurationSeconds,
+  agentActiveTasksGauge
+} from "../metrics/prometheus.js";
+import { withSpan } from "../metrics/opentelemetry.js";
 
 /**
  * Computes a unified-style diff string between two text bodies
@@ -59,10 +65,17 @@ export async function createPlan({ repositoryId, userId, goalPrompt }) {
     throw new Error("A development goal prompt is required.");
   }
 
-  const [repo, analysis] = await Promise.all([
-    Repository.findById(repositoryId),
-    Analysis.findOne({ repositoryId }).sort({ createdAt: -1 })
-  ]);
+  agentActiveTasksGauge.inc();
+  const startTime = Date.now();
+  let status = "success";
+
+  try {
+    return await withSpan("agent.create_plan", async (span) => {
+      span?.setAttribute("agent.task_type", "plan");
+      const [repo, analysis] = await Promise.all([
+        Repository.findById(repositoryId),
+        Analysis.findOne({ repositoryId }).sort({ createdAt: -1 })
+      ]);
 
   if (!repo) {
     throw new Error("Repository not found.");
@@ -200,26 +213,36 @@ export async function createPlan({ repositoryId, userId, goalPrompt }) {
     ]
   });
 
-  // Broadcast real-time planning events
-  await eventBus.publishTaskEvent(session._id, {
-    type: EVENT_TYPES.TASK_STARTED,
-    progress: { phase: "planning", step: 1, totalSteps: 3, percent: 25, message: "AI Agent initialized task planning..." },
-    payload: { status: "planning", goalPrompt }
-  });
+    // Broadcast real-time planning events
+    await eventBus.publishTaskEvent(session._id, {
+      type: EVENT_TYPES.TASK_STARTED,
+      progress: { phase: "planning", step: 1, totalSteps: 3, percent: 25, message: "AI Agent initialized task planning..." },
+      payload: { status: "planning", goalPrompt }
+    });
 
-  await eventBus.publishTaskEvent(session._id, {
-    type: EVENT_TYPES.TASK_PROGRESS,
-    progress: { phase: "planning", step: 2, totalSteps: 3, percent: 65, message: "Analyzing repository architecture and affected files..." },
-    payload: { affectedFiles }
-  });
+    await eventBus.publishTaskEvent(session._id, {
+      type: EVENT_TYPES.TASK_PROGRESS,
+      progress: { phase: "planning", step: 2, totalSteps: 3, percent: 65, message: "Analyzing repository architecture and affected files..." },
+      payload: { affectedFiles }
+    });
 
-  await eventBus.publishTaskEvent(session._id, {
-    type: EVENT_TYPES.TASK_COMPLETED,
-    progress: { phase: "plan_ready", step: 3, totalSteps: 3, percent: 100, message: "Implementation plan synthesized successfully." },
-    payload: { session }
-  });
+    await eventBus.publishTaskEvent(session._id, {
+      type: EVENT_TYPES.TASK_COMPLETED,
+      progress: { phase: "plan_ready", step: 3, totalSteps: 3, percent: 100, message: "Implementation plan synthesized successfully." },
+      payload: { session }
+    });
 
-  return session;
+    return session;
+    });
+  } catch (err) {
+    status = "error";
+    throw err;
+  } finally {
+    const duration = (Date.now() - startTime) / 1000;
+    agentActiveTasksGauge.dec();
+    agentTasksTotal.inc({ task_type: "plan", status });
+    agentTaskDurationSeconds.observe({ task_type: "plan" }, duration);
+  }
 }
 
 /**

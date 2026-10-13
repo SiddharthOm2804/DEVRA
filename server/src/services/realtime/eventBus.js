@@ -4,6 +4,7 @@ import { config } from "../../config/env.js";
 import { isRedisAvailable } from "../../config/redis.js";
 import logger from "../../utils/logger.js";
 import { createEvent, EVENT_TYPES } from "./eventContract.js";
+import { sseEventsEmittedTotal } from "../../metrics/prometheus.js";
 
 export class RealtimeEventBus {
   constructor() {
@@ -101,6 +102,11 @@ export class RealtimeEventBus {
     // 1. Emit to local in-memory listeners
     this.emitter.emit(`task:${taskId}`, eventObj);
     this.emitter.emit("all", { channel, event: eventObj });
+
+    // Prometheus metric: count emitted event
+    try {
+      sseEventsEmittedTotal.inc({ event_type: eventObj.type || "unknown" });
+    } catch (_) {}
 
     // 2. Publish to Redis PubSub for multi-instance broadcast if available
     if (this.useRedis && this.redisPub && this.redisPub.status === "ready") {

@@ -12,9 +12,13 @@ import agentRoutes from "./routes/agentRoutes.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
 import { notFoundHandler, errorHandler } from "./middleware/errorMiddleware.js";
 import { apiLimiter, authLimiter, aiLimiter } from "./middleware/rateLimiter.js";
+import { metricsMiddleware, metricsHandler } from "./middleware/metricsMiddleware.js";
 import { config } from "./config/env.js";
 
 const app = express();
+
+// Metrics collection middleware (registered early to capture all inbound requests)
+app.use(metricsMiddleware);
 
 // Security Middlewares: Helmet with Cross-Origin Resource Policy
 app.use(
@@ -73,6 +77,9 @@ app.get("/", (req, res) => {
     version: "0.1.0"
   });
 });
+
+// Prometheus Scrape Endpoint (supports optional Bearer token auth via METRICS_AUTH_TOKEN)
+app.get("/metrics", metricsHandler);
 
 // General API Rate Limiting
 app.use("/api", apiLimiter);

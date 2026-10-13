@@ -4,6 +4,11 @@ import { generateEmbedding, batchGenerateEmbeddings } from "./embeddingService.j
 import { getVectorStore } from "./vectorStore/index.js";
 import { extractSyntaxChunks } from "./treeSitterParser.js";
 import logger from "../utils/logger.js";
+import {
+  ragRetrievalTotal,
+  ragRetrievalDurationSeconds
+} from "../metrics/prometheus.js";
+import { withSpan } from "../metrics/opentelemetry.js";
 
 // Cache for tracking whether a repository namespace has been seeded during server runtime
 const indexedNamespaces = new Set();
@@ -376,50 +381,68 @@ export async function retrieveRelevantChunks({ repositoryId, branch = "main", qu
   }
 
   const startTime = Date.now();
-  const repoIdStr = repositoryId.toString();
+  let status = "success";
+  let backend = "memory";
 
-  // 1. Ensure repository is indexed
-  await ensureRepositoryIndexed(repoIdStr, branch);
+  return await withSpan("rag.retrieve_chunks", async (span) => {
+    try {
+      const repoIdStr = repositoryId.toString();
 
-  // 2. Generate embedding for user query
-  const queryEmbedding = await generateEmbedding(query);
+      // 1. Ensure repository is indexed
+      await ensureRepositoryIndexed(repoIdStr, branch);
 
-  // 3. Search via vector store
-  const vectorStore = await getVectorStore();
-  const scoredChunks = await vectorStore.search({
-    repositoryId: repoIdStr,
-    branch,
-    queryEmbedding,
-    queryText: query,
-    topK
+      // 2. Generate embedding for user query
+      const queryEmbedding = await generateEmbedding(query);
+
+      // 3. Search via vector store
+      const vectorStore = await getVectorStore();
+      backend = vectorStore.getName ? vectorStore.getName() : "vector_store";
+      span?.setAttribute("rag.backend", backend);
+      span?.setAttribute("rag.top_k", topK);
+
+      const scoredChunks = await vectorStore.search({
+        repositoryId: repoIdStr,
+        branch,
+        queryEmbedding,
+        queryText: query,
+        topK
+      });
+
+      const durationMs = Date.now() - startTime;
+      logger.debug(`[Retriever] Retrieved ${scoredChunks.length} chunks for query in ${durationMs}ms via ${backend} vector store.`);
+
+      // 4. Assemble formatted context and citations
+      let contextString = "";
+      const sourceReferences = [];
+
+      scoredChunks.forEach(({ id, filePath, fileName, startLine, endLine, content, score, relevanceScore }, idx) => {
+        contextString += `\n--- SOURCE FILE #${idx + 1}: ${filePath} (Lines ${startLine}-${endLine}) ---\n`;
+        contextString += `${content}\n`;
+
+        sourceReferences.push({
+          id,
+          fileName,
+          filePath,
+          lineRange: `${startLine}-${endLine}`,
+          snippet: (content || "").slice(0, 350),
+          relevanceScore: relevanceScore || Math.round((score || 0) * 100)
+        });
+      });
+
+      return {
+        chunks: scoredChunks,
+        contextString: contextString.trim(),
+        sourceReferences
+      };
+    } catch (err) {
+      status = "error";
+      throw err;
+    } finally {
+      const duration = (Date.now() - startTime) / 1000;
+      ragRetrievalTotal.inc({ backend, status });
+      ragRetrievalDurationSeconds.observe({ backend }, duration);
+    }
   });
-
-  const durationMs = Date.now() - startTime;
-  logger.debug(`[Retriever] Retrieved ${scoredChunks.length} chunks for query in ${durationMs}ms via ${vectorStore.getName()} vector store.`);
-
-  // 4. Assemble formatted context and citations
-  let contextString = "";
-  const sourceReferences = [];
-
-  scoredChunks.forEach(({ id, filePath, fileName, startLine, endLine, content, score, relevanceScore }, idx) => {
-    contextString += `\n--- SOURCE FILE #${idx + 1}: ${filePath} (Lines ${startLine}-${endLine}) ---\n`;
-    contextString += `${content}\n`;
-
-    sourceReferences.push({
-      id,
-      fileName,
-      filePath,
-      lineRange: `${startLine}-${endLine}`,
-      snippet: (content || "").slice(0, 350),
-      relevanceScore: relevanceScore || Math.round((score || 0) * 100)
-    });
-  });
-
-  return {
-    chunks: scoredChunks,
-    contextString: contextString.trim(),
-    sourceReferences
-  };
 }
 
 export default {

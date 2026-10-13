@@ -42,4 +42,44 @@ router.get("/health", async (req, res) => {
   });
 });
 
+/**
+ * @route   GET /api/health/ready
+ * @desc    Readiness probe endpoint for Kubernetes / orchestration
+ * @access  Public
+ */
+router.get("/health/ready", async (req, res) => {
+  const checks = {
+    mongodb: false,
+    vectorStore: false
+  };
+
+  // 1. Fast MongoDB check via connection state (1 = connected)
+  const isMongoReady = mongoose.connection.readyState === 1;
+  checks.mongodb = isMongoReady;
+
+  // 2. Vector store ping with 1000ms max timeout
+  try {
+    const store = await getVectorStore();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout")), 1000)
+    );
+    const healthPromise = store.healthCheck();
+    const storeHealth = await Promise.race([healthPromise, timeoutPromise]);
+    checks.vectorStore = Boolean(storeHealth && storeHealth.healthy !== false && storeHealth.status !== "error");
+  } catch (e) {
+    checks.vectorStore = false;
+  }
+
+  const isReady = checks.mongodb; // MongoDB is mandatory; vectorStore is optional or soft requirement
+
+  const statusCode = isReady ? 200 : 503;
+  return res.status(statusCode).json({
+    ready: isReady,
+    status: isReady ? "ready" : "not_ready",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    checks
+  });
+});
+
 export default router;

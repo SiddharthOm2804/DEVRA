@@ -1,6 +1,10 @@
 import VectorStore from "./VectorStore.js";
 import { cosineSimilarity } from "../embeddingService.js";
 import logger from "../../utils/logger.js";
+import {
+  vectorStoreOperationsTotal,
+  vectorStoreOperationDurationSeconds
+} from "../../metrics/prometheus.js";
 
 /**
  * In-Memory Vector Store implementation
@@ -84,24 +88,27 @@ export class MemoryVectorStore extends VectorStore {
       return [];
     }
 
-    const repoIdStr = String(repositoryId);
-    let targetChunks = [];
+    const startTime = Date.now();
+    let status = "success";
+    try {
+      const repoIdStr = String(repositoryId);
+      let targetChunks = [];
 
-    if (branch) {
-      const namespace = this._getNamespaceKey(repoIdStr, branch);
-      targetChunks = this.storage.get(namespace) || [];
-    } else {
-      // Search all branches for this repository (strict repository isolation)
-      for (const [key, chunks] of this.storage.entries()) {
-        if (key.startsWith(`${repoIdStr}:`)) {
-          targetChunks.push(...chunks);
+      if (branch) {
+        const namespace = this._getNamespaceKey(repoIdStr, branch);
+        targetChunks = this.storage.get(namespace) || [];
+      } else {
+        // Search all branches for this repository (strict repository isolation)
+        for (const [key, chunks] of this.storage.entries()) {
+          if (key.startsWith(`${repoIdStr}:`)) {
+            targetChunks.push(...chunks);
+          }
         }
       }
-    }
 
-    if (targetChunks.length === 0) {
-      return [];
-    }
+      if (targetChunks.length === 0) {
+        return [];
+      }
 
     const lowerQuery = (queryText || "").toLowerCase();
 
@@ -146,8 +153,16 @@ export class MemoryVectorStore extends VectorStore {
       };
     });
 
-    scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, topK);
+      scored.sort((a, b) => b.score - a.score);
+      return scored.slice(0, topK);
+    } catch (err) {
+      status = "error";
+      throw err;
+    } finally {
+      const duration = (Date.now() - startTime) / 1000;
+      vectorStoreOperationsTotal.inc({ backend: "memory", operation: "search", status });
+      vectorStoreOperationDurationSeconds.observe({ backend: "memory", operation: "search" }, duration);
+    }
   }
 
   async delete({ repositoryId, branch, chunkIds = [] }) {
