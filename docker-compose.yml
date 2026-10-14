@@ -1,27 +1,37 @@
-version: "3.8"
-
 services:
   mongodb:
     image: mongo:7.0
     container_name: devpilot-mongo
-    restart: always
+    restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
       - devpilot-data:/data/db
     environment:
       - MONGO_INITDB_DATABASE=devra
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     networks:
       - devpilot-network
 
   redis:
     image: redis/redis-stack-server:latest
     container_name: devpilot-redis
-    restart: always
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - devpilot-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
     networks:
       - devpilot-network
 
@@ -30,7 +40,7 @@ services:
       context: ./server
       dockerfile: Dockerfile
     container_name: devpilot-api
-    restart: always
+    restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
@@ -47,17 +57,19 @@ services:
       - AI_PROVIDER=${AI_PROVIDER:-gemini}
       - AI_API_KEY=${AI_API_KEY:-}
     depends_on:
-      - mongodb
-      - redis
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - devpilot-network
 
   client:
     build:
-      context: ./client
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: client/Dockerfile
     container_name: devpilot-web
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:80"
     depends_on:

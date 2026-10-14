@@ -10,29 +10,32 @@ export default function StatCard({
   trendPositive,
   progress,
   badgeText,
-  badgeColor = "cyan"
+  badgeColor = "violet"
 }) {
   return (
-    <Card hover className="flex flex-col justify-between relative overflow-hidden group">
+    <Card hover className="flex flex-col justify-between relative overflow-hidden group border-slate-800/80 bg-gradient-to-b from-[#0D1222] to-[#080C16]">
+      {/* Subtle top corner ambient glow */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-violet-600/5 rounded-full blur-2xl pointer-events-none group-hover:bg-violet-600/10 transition-colors" />
+
       {/* Top Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+      <div className="flex items-center justify-between relative z-10">
+        <span className="text-xs font-medium text-slate-400 uppercase tracking-wider font-mono">
           {title}
         </span>
         {Icon && (
-          <div className="w-8 h-8 rounded-lg bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-slate-300 group-hover:text-sky-400 group-hover:border-sky-500/30 transition-colors">
+          <div className="w-8 h-8 rounded-lg bg-violet-950/40 border border-violet-500/20 flex items-center justify-center text-violet-300 group-hover:text-cyan-300 group-hover:border-cyan-500/30 group-hover:shadow-glow-violet transition-all">
             <Icon className="w-4 h-4" />
           </div>
         )}
       </div>
 
       {/* Main Metric Value */}
-      <div className="mt-4 mb-2 flex items-baseline gap-2">
-        <span className="text-3xl font-bold tracking-tight text-white font-mono">
+      <div className="mt-4 mb-2 flex items-baseline gap-2 relative z-10">
+        <span className="text-3xl font-extrabold tracking-tight text-white font-mono drop-shadow-[0_2px_8px_rgba(255,255,255,0.1)]">
           {value}
         </span>
         {badgeText && (
-          <span className="text-xs px-2 py-0.5 rounded font-mono font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+          <span className="text-xs px-2 py-0.5 rounded font-mono font-semibold bg-violet-500/10 text-violet-300 border border-violet-500/30">
             {badgeText}
           </span>
         )}
@@ -40,19 +43,19 @@ export default function StatCard({
 
       {/* Progress Bar (Optional) */}
       {typeof progress === "number" && (
-        <div className="w-full bg-slate-800 rounded-full h-1.5 my-2 overflow-hidden">
+        <div className="w-full bg-slate-900/80 rounded-full h-1.5 my-2 overflow-hidden border border-slate-800">
           <div
-            className="bg-sky-500 h-full rounded-full transition-all duration-500"
+            className="bg-gradient-to-r from-violet-500 to-cyan-400 h-full rounded-full transition-all duration-500 shadow-sm shadow-violet-500/50"
             style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
           ></div>
         </div>
       )}
 
       {/* Footer / Trend */}
-      <div className="mt-2 text-xs flex items-center justify-between">
+      <div className="mt-2 text-xs flex items-center justify-between relative z-10">
         {trend && (
           <span
-            className={`font-medium flex items-center gap-1 ${
+            className={`font-mono font-medium flex items-center gap-1 ${
               trendPositive === true
                 ? "text-emerald-400"
                 : trendPositive === false
@@ -63,7 +66,7 @@ export default function StatCard({
             {trend}
           </span>
         )}
-        {subtitle && <span className="text-slate-500 truncate ml-auto">{subtitle}</span>}
+        {subtitle && <span className="text-slate-500 truncate ml-auto font-mono">{subtitle}</span>}
       </div>
     </Card>
   );

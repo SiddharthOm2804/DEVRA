@@ -11,7 +11,9 @@ import {
   GitPullRequest,
   Box,
   Layers,
-  ChevronRight
+  ChevronRight,
+  Terminal,
+  Activity
 } from "lucide-react";
 import DevraLogo from "./ui/DevraLogo";
 import Button from "./ui/Button";
@@ -30,11 +32,11 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
-    { label: "Product", href: "#hero" },
-    { label: "Features", href: "#features" },
-    { label: "Codebase", href: "#codebase-3d" },
-    { label: "AI Review", href: "#ai-review" },
-    { label: "GitHub", href: "https://github.com", isExternal: true }
+    { label: "Overview", href: "#hero" },
+    { label: "Spatial 3D", href: "#codebase-3d" },
+    { label: "AI AST Review", href: "#ai-review" },
+    { label: "Architecture", href: "#features" },
+    { label: "GitHub", href: "https://github.com/SiddharthOm2804/DEVRA", isExternal: true }
   ];
 
   const handleScrollTo = (e, href) => {
@@ -50,10 +52,10 @@ export default function Navbar() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-200 select-none ${
+      className={`sticky top-0 z-50 transition-all duration-300 select-none ${
         scrolled
-          ? "bg-[#090D15]/85 backdrop-blur-xl border-b border-slate-800/80 shadow-lg shadow-black/30 py-3"
-          : "bg-[#080B11]/70 backdrop-blur-md border-b border-slate-800/40 py-4"
+          ? "bg-[#060911]/85 backdrop-blur-2xl border-b border-white/[0.08] shadow-2xl shadow-black/60 py-3"
+          : "bg-[#060911]/60 backdrop-blur-md border-b border-white/[0.04] py-4"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
@@ -63,7 +65,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-7 text-xs font-mono tracking-wide text-slate-400">
+        <nav className="hidden md:flex items-center gap-8 text-xs font-mono tracking-wider text-slate-400">
           {navLinks.map((link) =>
             link.isExternal ? (
               <a
@@ -81,7 +83,7 @@ export default function Navbar() {
                 key={link.label}
                 href={link.href}
                 onClick={(e) => handleScrollTo(e, link.href)}
-                className="hover:text-white transition-colors cursor-pointer"
+                className="hover:text-violet-300 transition-colors cursor-pointer"
               >
                 {link.label}
               </a>
@@ -93,12 +95,12 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           <Link to="/login">
             <Button variant="ghost" size="sm">
-              Login
+              Sign In
             </Button>
           </Link>
           <Link to="/dashboard">
             <Button variant="primary" size="sm" icon={ArrowRight}>
-              Get Started
+              Launch Console
             </Button>
           </Link>
         </div>
@@ -121,7 +123,7 @@ export default function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="md:hidden border-b border-slate-800 bg-[#0A0E18]/95 backdrop-blur-xl px-4 py-6 overflow-hidden"
+            className="md:hidden border-b border-white/10 bg-[#070A14]/95 backdrop-blur-2xl px-4 py-6 overflow-hidden shadow-2xl"
           >
             <div className="flex flex-col space-y-4">
               {navLinks.map((link) =>
@@ -145,22 +147,22 @@ export default function Navbar() {
                     key={link.label}
                     href={link.href}
                     onClick={(e) => handleScrollTo(e, link.href)}
-                    className="text-sm font-mono text-slate-300 hover:text-white py-1"
+                    className="text-sm font-mono text-slate-300 hover:text-violet-300 py-1"
                   >
                     {link.label}
                   </a>
                 )
               )}
 
-              <div className="pt-4 border-t border-slate-800/80 flex flex-col gap-2.5">
+              <div className="pt-4 border-t border-white/10 flex flex-col gap-2.5">
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="secondary" size="md" className="w-full justify-center">
-                    Login
+                    Sign In
                   </Button>
                 </Link>
                 <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="primary" size="md" className="w-full justify-center" icon={ArrowRight}>
-                    Get Started
+                    Launch Console
                   </Button>
                 </Link>
               </div>

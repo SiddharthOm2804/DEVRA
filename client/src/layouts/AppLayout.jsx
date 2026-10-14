@@ -16,7 +16,9 @@ import {
   ExternalLink,
   ShieldCheck,
   CheckCircle2,
-  Cpu
+  Cpu,
+  Sparkles,
+  Layers
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { MOCK_REPOSITORIES } from "../constants/mockData";
@@ -45,14 +47,14 @@ export default function AppLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#080B11] text-slate-100 flex flex-col antialiased">
-      {/* Top Navbar */}
-      <header className="h-14 border-b border-slate-800/80 bg-[#0B0F17] px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 select-none">
+    <div className="min-h-screen bg-[#060911] text-slate-100 flex flex-col antialiased selection:bg-violet-500/25 selection:text-violet-200">
+      {/* Top Futuristic Navbar */}
+      <header className="h-14 border-b border-white/[0.07] bg-[#0A0E1A]/80 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40 select-none shadow-sm shadow-black/40">
         {/* Left: Brand & Repo Selector */}
         <div className="flex items-center gap-4">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+            className="md:hidden p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -61,33 +63,33 @@ export default function AppLayout({ children }) {
             <DevraLogo size="sm" showText={true} />
           </Link>
 
-          <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
+          <div className="h-4 w-px bg-white/10 hidden sm:block"></div>
 
           {/* Repo Switcher Dropdown */}
           <div className="relative hidden sm:block">
             <button
               onClick={() => setRepoDropdownOpen(!repoDropdownOpen)}
-              className="flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-mono text-slate-300 bg-slate-900 border border-slate-800 hover:border-slate-700 transition-colors"
+              className="flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-mono text-slate-300 bg-[#0E1526] border border-white/10 hover:border-violet-500/40 transition-colors"
             >
-              <FolderGit2 className="w-3.5 h-3.5 text-sky-400" />
+              <FolderGit2 className="w-3.5 h-3.5 text-cyan-400" />
               <span>{activeRepo}</span>
               <ChevronDown className="w-3 h-3 text-slate-500" />
             </button>
 
             {repoDropdownOpen && (
               <div
-                className="absolute left-0 mt-1.5 w-64 bg-[#0F1420] border border-slate-800 rounded-lg shadow-xl py-1 z-50 text-xs"
+                className="absolute left-0 mt-1.5 w-64 bg-[#0D1222] border border-white/10 rounded-lg shadow-2xl py-1 z-50 text-xs shadow-black/80"
                 onClick={() => setRepoDropdownOpen(false)}
               >
-                <div className="px-3 py-1.5 text-[10px] uppercase font-mono text-slate-500 tracking-wider">
+                <div className="px-3 py-1.5 text-[10px] uppercase font-mono text-slate-400 tracking-wider">
                   Switch Active Repository
                 </div>
                 {MOCK_REPOSITORIES.map((repo) => (
                   <button
                     key={repo.id}
                     onClick={() => setActiveRepo(repo.name)}
-                    className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-slate-800/80 transition-colors ${
-                      activeRepo === repo.name ? "bg-slate-800/50 text-sky-400 font-medium" : "text-slate-300"
+                    className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-violet-950/40 transition-colors ${
+                      activeRepo === repo.name ? "bg-violet-950/50 text-violet-300 font-medium" : "text-slate-300"
                     }`}
                   >
                     <span className="font-mono">{repo.name}</span>
@@ -99,79 +101,76 @@ export default function AppLayout({ children }) {
           </div>
         </div>
 
-        {/* Center: Search Bar prompt */}
-        <div className="hidden lg:flex items-center">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-400 w-72">
-            <Search className="w-3.5 h-3.5 text-slate-500" />
-            <span className="truncate">Search codebase, reviews, docs...</span>
-            <kbd className="ml-auto text-[10px] font-mono bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700">
-              ⌘K
+        {/* Center: Quick Global Search Input */}
+        <div className="hidden lg:flex items-center flex-1 max-w-md mx-8">
+          <div className="w-full relative">
+            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search AST symbols, reviews, files... (Cmd + K)"
+              className="w-full bg-[#070B14]/80 border border-white/10 rounded-lg pl-9 pr-8 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all font-mono"
+            />
+            <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-500 bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700/60">
+              /
             </kbd>
           </div>
         </div>
 
-        {/* Right: Status, Notifications & User */}
+        {/* Right: Status Indicators & Profile */}
         <div className="flex items-center gap-3">
-          {/* Operational Pill */}
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-mono text-emerald-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>API Online</span>
+          {/* Live Node Link Indicator */}
+          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#0E1526] border border-white/10 text-xs font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-slate-300 text-[11px]">RAG Vector: Ready</span>
           </div>
 
-          <button
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors relative"
-            title="Notifications"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
-          </button>
-
-          {/* User Profile */}
+          {/* User Profile Dropdown */}
           <div className="relative">
             <button
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-              className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-800/80 transition-colors"
+              className="flex items-center gap-2.5 p-1 rounded-lg hover:bg-slate-800/80 transition-colors"
             >
-              <img
-                src={user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64&h=64"}
-                alt={user?.name || "User"}
-                className="w-7 h-7 rounded-md object-cover border border-slate-700"
-              />
-              <span className="text-xs font-medium text-slate-300 hidden sm:inline-block max-w-[100px] truncate">
-                {user?.name || "Alex"}
+              <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-violet-600 to-cyan-500 p-px flex items-center justify-center">
+                <div className="w-full h-full bg-[#0A0E1A] rounded-full flex items-center justify-center text-xs font-bold font-mono text-violet-300">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : "D"}
+                </div>
+              </div>
+              <span className="text-xs font-medium text-slate-200 hidden md:block">
+                {user?.name || "Developer"}
               </span>
-              <ChevronDown className="w-3 h-3 text-slate-500" />
+              <ChevronDown className="w-3 h-3 text-slate-400 hidden md:block" />
             </button>
 
             {userDropdownOpen && (
               <div
-                className="absolute right-0 mt-1.5 w-56 bg-[#0F1420] border border-slate-800 rounded-lg shadow-xl py-1 z-50 text-xs"
+                className="absolute right-0 mt-2 w-56 bg-[#0D1222] border border-white/10 rounded-lg shadow-2xl py-1.5 z-50 text-xs shadow-black/80"
                 onClick={() => setUserDropdownOpen(false)}
               >
-                <div className="px-3 py-2 border-b border-slate-800/80">
-                  <p className="font-semibold text-white truncate">{user?.name}</p>
-                  <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
-                  <p className="text-[10px] font-mono text-sky-400 mt-1">{user?.organization}</p>
+                <div className="px-3.5 py-2 border-b border-white/10">
+                  <p className="font-semibold text-white truncate">{user?.name || "Developer"}</p>
+                  <p className="text-[11px] font-mono text-slate-400 truncate">{user?.email || "dev@devra.ai"}</p>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-violet-400"></span>
+                    <span className="text-[10px] uppercase font-mono text-violet-400 font-semibold">{user?.role || "Architect"}</span>
+                  </div>
                 </div>
+
                 <Link
                   to="/settings"
-                  className="block px-3 py-2 text-slate-300 hover:bg-slate-800/80 transition-colors"
+                  className="flex items-center gap-2 px-3.5 py-2 text-slate-300 hover:bg-violet-950/40 hover:text-white transition-colors"
                 >
-                  Account Settings
+                  <Settings className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Account &amp; API Keys</span>
                 </Link>
-                <Link
-                  to="/"
-                  className="block px-3 py-2 text-slate-300 hover:bg-slate-800/80 transition-colors"
-                >
-                  Landing Page
-                </Link>
-                <div className="border-t border-slate-800/80 my-1"></div>
+
+                <div className="border-t border-white/10 my-1"></div>
+
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left px-3 py-2 text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 transition-colors"
+                  className="w-full flex items-center gap-2 px-3.5 py-2 text-rose-400 hover:bg-rose-950/30 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out</span>
+                  <span>Disconnect Session</span>
                 </button>
               </div>
             )}
@@ -179,33 +178,35 @@ export default function AppLayout({ children }) {
         </div>
       </header>
 
-      {/* Main Container with Sidebar + Content */}
+      {/* Main Workspace Body */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Desktop Sidebar */}
-        <aside className="w-56 bg-[#090D15] border-r border-slate-800/80 flex flex-col justify-between hidden md:flex shrink-0 select-none">
-          <div className="p-3 space-y-1">
-            <div className="px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-500">
-              Navigation
+        {/* Desktop Sidebar Navigation */}
+        <aside className="w-56 border-r border-white/[0.07] bg-[#080C16] p-3 hidden md:flex flex-col justify-between select-none">
+          <div className="space-y-1">
+            <div className="px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold">
+              Spatial Workspace
             </div>
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path;
+              const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + "/");
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono transition-all duration-150 ${
                     isActive
-                      ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
+                      ? "bg-gradient-to-r from-violet-950/60 to-transparent text-violet-300 font-semibold border-l-2 border-violet-500 shadow-sm shadow-violet-950/40"
                       : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Icon className={`w-4 h-4 ${isActive ? "text-sky-400" : "text-slate-400"}`} />
+                    <Icon className={`w-4 h-4 ${isActive ? "text-violet-400" : "text-slate-500"}`} />
                     <span>{item.label}</span>
                   </div>
                   {item.badge && (
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
+                      isActive ? "bg-violet-500/20 text-violet-300" : "bg-slate-800 text-slate-400"
+                    }`}>
                       {item.badge}
                     </span>
                   )}
@@ -214,70 +215,57 @@ export default function AppLayout({ children }) {
             })}
           </div>
 
-          {/* VS Code Extension Status Pill */}
-          <div className="p-3 m-3 rounded-lg bg-[#0F1420] border border-slate-800/80 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Terminal className="w-3 h-3 text-sky-400" />
-                <span>VS Code</span>
+          {/* Bottom Extension & Infrastructure Telemetry */}
+          <div className="p-3 rounded-xl bg-[#0B101E] border border-white/10 space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-mono">
+              <span className="text-slate-400">VS Code Status</span>
+              <span className="text-cyan-400 flex items-center gap-1 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                v0.1.0
               </span>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             </div>
-            <p className="text-[11px] text-slate-300 font-mono">
-              devra-vscode v0.1.0
-            </p>
             <p className="text-[10px] text-slate-500 leading-tight">
-              In-editor AST sync active
+              3D AST spatial indexing synchronized with local daemon.
             </p>
           </div>
         </aside>
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 bg-black/80 md:hidden flex flex-col">
-            <div className="p-4 bg-[#0B0F17] border-b border-slate-800 flex items-center justify-between">
-              <span className="font-bold text-white text-base">Menu</span>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4 space-y-2 bg-[#090D15] flex-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.path;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium ${
-                      isActive
-                        ? "bg-sky-500/10 text-sky-400 border border-sky-500/20"
-                        : "text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon className="w-4 h-4" />
-                      <span>{item.label}</span>
-                    </div>
-                    {item.badge && (
-                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
+          <div className="md:hidden fixed inset-0 top-14 z-50 bg-[#060911]/95 backdrop-blur-xl p-4 flex flex-col space-y-2 border-b border-white/10">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between p-3 rounded-lg text-sm font-mono ${
+                    isActive ? "bg-violet-950/60 text-violet-300 font-semibold" : "text-slate-300 hover:bg-slate-800/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className="w-4 h-4 text-violet-400" />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span className="text-xs bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded font-mono">
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
           </div>
         )}
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto bg-[#080B11]">
-          {children}
+        {/* Main Routed Page Content */}
+        <main className="flex-1 overflow-y-auto relative bg-[#060911]">
+          {/* Subtle spatial background ambient lights */}
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-violet-600/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-cyan-600/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10">{children}</div>
         </main>
       </div>
     </div>

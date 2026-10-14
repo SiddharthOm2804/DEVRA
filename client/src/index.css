@@ -5,7 +5,7 @@
 :root {
   font-family: 'Geist', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   color-scheme: dark;
-  letter-spacing: -0.011em;
+  letter-spacing: -0.012em;
 }
 
 code, pre, .font-mono {
@@ -16,16 +16,18 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #080B11;
-  color: #F3F4F6;
+  background-color: #060911;
+  color: #F8FAFC;
   overflow-x: hidden;
+  selection-background-color: rgba(139, 92, 246, 0.3);
+  selection-color: #DDD6FE;
 }
 
-/* Subtle architectural dot grid background */
+/* Atmospheric spatial grid backgrounds */
 .bg-devra-grid {
   background-size: 32px 32px;
   background-image: 
-    radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    radial-gradient(circle, rgba(139, 92, 246, 0.08) 1px, transparent 1px);
 }
 
 .bg-devra-lines {
@@ -35,33 +37,54 @@ body {
     linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
 }
 
-/* Glassmorphism panels */
+/* Atmospheric Radial Lights */
+.bg-radial-violet {
+  background: radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.15) 0%, rgba(6, 9, 17, 0) 70%);
+}
+
+.bg-radial-cyan {
+  background: radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.1) 0%, rgba(6, 9, 17, 0) 60%);
+}
+
+/* Glassmorphism & Cyber Panels */
 .glass-panel {
-  background: rgba(13, 17, 26, 0.72);
+  background: rgba(10, 14, 26, 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-panel-glow {
-  background: rgba(14, 19, 30, 0.8);
+  background: rgba(12, 17, 32, 0.82);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(56, 189, 248, 0.22);
-  box-shadow: 0 0 35px -8px rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(139, 92, 246, 0.28);
+  box-shadow: 0 0 35px -8px rgba(139, 92, 246, 0.22);
+}
+
+.glass-panel-cyan {
+  background: rgba(10, 18, 30, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  box-shadow: 0 0 35px -8px rgba(6, 182, 212, 0.18);
 }
 
 .card-gradient {
-  background: linear-gradient(180deg, rgba(17, 24, 39, 0.6) 0%, rgba(11, 15, 25, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(16, 22, 40, 0.7) 0%, rgba(10, 14, 26, 0.95) 100%);
 }
 
-/* Text glow treatments */
+/* Glow Text Treatments */
+.glow-text-violet {
+  text-shadow: 0 0 24px rgba(139, 92, 246, 0.55);
+}
+
 .glow-text-cyan {
-  text-shadow: 0 0 24px rgba(56, 189, 248, 0.45);
+  text-shadow: 0 0 24px rgba(6, 182, 212, 0.55);
 }
 
-.glow-text-purple {
-  text-shadow: 0 0 24px rgba(168, 85, 247, 0.45);
+.glow-text-magenta {
+  text-shadow: 0 0 24px rgba(236, 72, 153, 0.55);
 }
 
 /* Custom subtle scrollbars */
@@ -70,12 +93,22 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #080B11;
+  background: #060911;
 }
 ::-webkit-scrollbar-thumb {
   background: #1E293B;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #8B5CF6;
+}
+
+/* Respect user reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

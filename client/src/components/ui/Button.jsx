@@ -10,7 +10,7 @@ export default function Button({
   icon: Icon,
   ...props
 }) {
-  const baseStyles = "inline-flex items-center justify-center font-medium transition-all duration-150 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0B0F17] disabled:opacity-50 disabled:cursor-not-allowed select-none";
+  const baseStyles = "inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#060911] disabled:opacity-50 disabled:cursor-not-allowed select-none";
 
   const sizeStyles = {
     xs: "text-xs px-2.5 py-1 gap-1.5",
@@ -20,11 +20,12 @@ export default function Button({
   };
 
   const variantStyles = {
-    primary: "bg-sky-500 hover:bg-sky-400 text-white font-semibold shadow-sm focus:ring-sky-500 active:scale-[0.98]",
-    secondary: "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 focus:ring-slate-500 active:scale-[0.98]",
-    outline: "bg-transparent hover:bg-slate-800/60 text-slate-300 border border-slate-700/80 hover:border-slate-600 focus:ring-slate-500",
-    ghost: "bg-transparent hover:bg-slate-800/60 text-slate-400 hover:text-slate-200 focus:ring-slate-500",
-    danger: "bg-rose-600/90 hover:bg-rose-500 text-white focus:ring-rose-500 active:scale-[0.98]"
+    primary: "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-violet-900/30 border border-violet-400/30 focus:ring-violet-500 active:scale-[0.98]",
+    cyan: "bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white font-semibold shadow-lg shadow-cyan-900/30 border border-cyan-400/30 focus:ring-cyan-500 active:scale-[0.98]",
+    secondary: "bg-[#0E1528] hover:bg-[#16213D] text-slate-200 border border-slate-700/80 hover:border-violet-500/40 focus:ring-slate-500 active:scale-[0.98]",
+    outline: "bg-transparent hover:bg-violet-950/30 text-slate-300 hover:text-white border border-slate-700/80 hover:border-violet-500/50 focus:ring-violet-500",
+    ghost: "bg-transparent hover:bg-slate-800/60 text-slate-400 hover:text-violet-200 focus:ring-violet-500",
+    danger: "bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow-lg shadow-rose-950/40 border border-rose-400/30 focus:ring-rose-500 active:scale-[0.98]"
   };
 
   return (

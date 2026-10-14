@@ -12,9 +12,9 @@ const ARCH_NODES = [
     label: "AI Neural Engine",
     domain: "Orchestrator",
     position: [0, 2.1, 0],
-    color: "#38bdf8",
-    glowColor: "#0284c7",
-    size: 0.32,
+    color: "#8B5CF6", // Electric Violet
+    glowColor: "#7C3AED",
+    size: 0.34,
     isCore: true,
     metrics: { status: "Active", astNodes: "12,480", sync: "Real-time" }
   },
@@ -24,9 +24,9 @@ const ARCH_NODES = [
     label: "Client UI & SPA",
     domain: "Presentation",
     position: [-2.5, 0.4, 0.5],
-    color: "#38bdf8",
-    glowColor: "#0ea5e9",
-    size: 0.24,
+    color: "#06B6D4", // Cyan
+    glowColor: "#0891B2",
+    size: 0.25,
     metrics: { framework: "React 19", bundle: "184 kB", components: "42" }
   },
   {
@@ -35,7 +35,7 @@ const ARCH_NODES = [
     label: "REST & Streaming API",
     domain: "Gateway",
     position: [0, 0.3, -0.4],
-    color: "#34d399",
+    color: "#10B981", // Emerald
     glowColor: "#059669",
     size: 0.25,
     metrics: { latency: "14ms", endpoints: "32 routes", rateLimit: "100 req/s" }
@@ -46,9 +46,9 @@ const ARCH_NODES = [
     label: "Worker & RAG Engine",
     domain: "Business Logic",
     position: [2.5, 0.4, 0.5],
-    color: "#a855f7",
-    glowColor: "#7c3aed",
-    size: 0.24,
+    color: "#EC4899", // Magenta
+    glowColor: "#DB2777",
+    size: 0.25,
     metrics: { workers: "4 threads", vectorIndex: "128-d L2", aiModel: "Gemini 1.5" }
   },
   {
@@ -57,21 +57,21 @@ const ARCH_NODES = [
     label: "MongoDB & Vector Store",
     domain: "Persistence",
     position: [0, -1.8, 0],
-    color: "#fbbf24",
-    glowColor: "#d97706",
+    color: "#F59E0B", // Amber
+    glowColor: "#D97706",
     size: 0.26,
     metrics: { readyState: "Connected", collections: "8", replication: "Primary" }
   },
-  // Satellite satellite modules
+  // Satellite modules
   {
     id: "auth-guard",
     name: "JWT Guard",
     label: "Auth & Security",
     domain: "Security",
     position: [-1.4, 1.2, 0.2],
-    color: "#38bdf8",
-    glowColor: "#0284c7",
-    size: 0.16,
+    color: "#A78BFA",
+    glowColor: "#8B5CF6",
+    size: 0.17,
     metrics: { algorithm: "RS256", expires: "7d" }
   },
   {
@@ -80,9 +80,9 @@ const ARCH_NODES = [
     label: "Semantic Embeddings",
     domain: "AI Index",
     position: [1.5, 1.2, 0.1],
-    color: "#a855f7",
-    glowColor: "#7c3aed",
-    size: 0.16,
+    color: "#8B5CF6",
+    glowColor: "#6D28D9",
+    size: 0.17,
     metrics: { similarity: "Cosine", chunks: "1,240" }
   },
   {
@@ -91,364 +91,259 @@ const ARCH_NODES = [
     label: "Automated Linter",
     domain: "Review",
     position: [1.6, -0.8, 0.4],
-    color: "#f43f5e",
-    glowColor: "#e11d48",
-    size: 0.16,
+    color: "#F43F5E",
+    glowColor: "#E11D48",
+    size: 0.17,
     metrics: { rules: "24 rules", score: "96/100" }
   },
   {
     id: "cache-layer",
-    name: "LRU Cache",
-    label: "Memory Store",
+    name: "Redis Pub/Sub",
+    label: "Streaming Realtime",
     domain: "Cache",
     position: [-1.5, -0.8, 0.3],
-    color: "#34d399",
-    glowColor: "#059669",
-    size: 0.15,
-    metrics: { hitRate: "94.2%", maxItems: "5,000" }
+    color: "#06B6D4",
+    glowColor: "#0284C7",
+    size: 0.17,
+    metrics: { throughput: "2.4k ops/s", memory: "18.2 MB" }
   }
 ];
 
-// Defined directional connections
-const ARCH_CONNECTIONS = [
-  // DEVRA core broadcasts to all top subsystems
+// Connection topology connecting architectural nodes
+const ARCH_EDGES = [
   ["devra-core", "frontend"],
   ["devra-core", "api"],
   ["devra-core", "services"],
+  ["devra-core", "database"],
   ["devra-core", "auth-guard"],
   ["devra-core", "vector-rag"],
-  // Middle layer inter-connections
   ["frontend", "api"],
   ["api", "services"],
-  ["auth-guard", "api"],
+  ["api", "auth-guard"],
+  ["services", "database"],
   ["services", "vector-rag"],
   ["services", "diff-engine"],
-  ["api", "cache-layer"],
-  // Converge to Database
-  ["frontend", "database"],
-  ["api", "database"],
-  ["services", "database"],
-  ["cache-layer", "database"],
-  ["diff-engine", "database"]
+  ["database", "cache-layer"],
+  ["api", "cache-layer"]
 ];
 
-function SceneGraph({ hoveredNode, setHoveredNode, selectedNode, setSelectedNode, isReducedMotion }) {
-  const groupRef = useRef();
-  const mouseTarget = useRef({ x: 0, y: 0 });
+function LivingMeshNode({ node, isHovered, isSelected, onHover, onClick }) {
+  const meshRef = useRef();
+  const ringRef = useRef();
 
-  // Pre-calculate line vertices
-  const { linePositions, nodeMap } = useMemo(() => {
-    const map = {};
-    ARCH_NODES.forEach((n) => {
-      map[n.id] = n;
-    });
-
-    const lines = [];
-    ARCH_CONNECTIONS.forEach(([fromId, toId]) => {
-      const from = map[fromId];
-      const to = map[toId];
-      if (from && to) {
-        lines.push(
-          from.position[0], from.position[1], from.position[2],
-          to.position[0], to.position[1], to.position[2]
-        );
-      }
-    });
-
-    return {
-      linePositions: new Float32Array(lines),
-      nodeMap: map
-    };
-  }, []);
-
-  // Ambient data particles traveling through the code graph
-  const particleCount = 28;
-  const particles = useMemo(() => {
-    const arr = [];
-    for (let i = 0; i < particleCount; i++) {
-      const conn = ARCH_CONNECTIONS[i % ARCH_CONNECTIONS.length];
-      arr.push({
-        from: conn[0],
-        to: conn[1],
-        progress: Math.random(),
-        speed: 0.2 + Math.random() * 0.35,
-        color: i % 2 === 0 ? "#38bdf8" : "#818cf8"
-      });
+  useFrame((_, delta) => {
+    if (meshRef.current) {
+      meshRef.current.rotation.y += delta * 0.4;
+      meshRef.current.rotation.x += delta * 0.2;
     }
-    return arr;
-  }, []);
-
-  const particleRefs = useRef([]);
-
-  // Mouse parallax handler
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      const x = (e.clientX / window.innerWidth - 0.5) * 2;
-      const y = (e.clientY / window.innerHeight - 0.5) * 2;
-      mouseTarget.current = { x, y };
-    };
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  useFrame((state, delta) => {
-    if (!groupRef.current) return;
-
-    if (!isReducedMotion) {
-      // Subtle orbital sway + smooth mouse parallax
-      const targetRotY = mouseTarget.current.x * 0.35 + Math.sin(state.clock.getElapsedTime() * 0.4) * 0.08;
-      const targetRotX = -mouseTarget.current.y * 0.25 + Math.cos(state.clock.getElapsedTime() * 0.3) * 0.05;
-
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetRotY, delta * 2.5);
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetRotX, delta * 2.5);
-
-      // Animate flowing data particles
-      particles.forEach((p, idx) => {
-        p.progress += delta * p.speed;
-        if (p.progress > 1) p.progress = 0;
-
-        const mesh = particleRefs.current[idx];
-        if (mesh && nodeMap[p.from] && nodeMap[p.to]) {
-          const fromPos = nodeMap[p.from].position;
-          const toPos = nodeMap[p.to].position;
-          mesh.position.set(
-            THREE.MathUtils.lerp(fromPos[0], toPos[0], p.progress),
-            THREE.MathUtils.lerp(fromPos[1], toPos[1], p.progress),
-            THREE.MathUtils.lerp(fromPos[2], toPos[2], p.progress)
-          );
-        }
-      });
+    if (ringRef.current) {
+      ringRef.current.rotation.z -= delta * 0.6;
     }
   });
 
+  const scale = isHovered ? 1.35 : isSelected ? 1.2 : 1;
+
+  return (
+    <group position={node.position}>
+      {/* Outer energy orbital ring */}
+      <mesh ref={ringRef} scale={scale * 1.55}>
+        <ringGeometry args={[node.size * 1.1, node.size * 1.25, 32]} />
+        <meshBasicMaterial
+          color={node.color}
+          transparent
+          opacity={isHovered ? 0.85 : 0.3}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Main interactive node geometry */}
+      <mesh
+        ref={meshRef}
+        scale={scale}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          onHover(node);
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation();
+          onHover(null);
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(node);
+        }}
+        cursor="pointer"
+      >
+        <octahedronGeometry args={[node.size, 1]} />
+        <meshStandardMaterial
+          color={node.color}
+          emissive={node.glowColor}
+          emissiveIntensity={isHovered ? 1.2 : 0.45}
+          roughness={0.15}
+          metalness={0.85}
+          wireframe={false}
+        />
+      </mesh>
+
+      {/* Node label anchor */}
+      <Html distanceFactor={10} position={[0, -node.size - 0.25, 0]} center>
+        <div
+          className={`pointer-events-none transition-all duration-200 select-none px-2 py-0.5 rounded border text-[10px] font-mono whitespace-nowrap backdrop-blur-md ${
+            isHovered
+              ? "bg-[#0A0E1A]/95 text-white border-violet-500 shadow-glow-violet scale-110 font-bold"
+              : "bg-[#060911]/85 text-slate-300 border-white/10"
+          }`}
+        >
+          {node.name}
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+function LivingMeshEdges({ nodesMap }) {
+  const lineData = useMemo(() => {
+    const points = [];
+    const colors = [];
+
+    ARCH_EDGES.forEach(([srcId, dstId]) => {
+      const src = nodesMap[srcId];
+      const dst = nodesMap[dstId];
+      if (src && dst) {
+        points.push(new THREE.Vector3(...src.position));
+        points.push(new THREE.Vector3(...dst.position));
+
+        const c1 = new THREE.Color(src.color);
+        const c2 = new THREE.Color(dst.color);
+        colors.push(c1.r, c1.g, c1.b);
+        colors.push(c2.r, c2.g, c2.b);
+      }
+    });
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    return geometry;
+  }, [nodesMap]);
+
+  return (
+    <lineSegments geometry={lineData}>
+      <lineBasicMaterial vertexColors transparent opacity={0.35} linewidth={1} />
+    </lineSegments>
+  );
+}
+
+function FloatingSceneGroup({ hoveredNode, selectedNode, onHoverNode, onSelectNode }) {
+  const groupRef = useRef();
+
+  // Subtle orbital rotation with mouse parallax dampening
+  useFrame(({ mouse }) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(
+        groupRef.current.rotation.y,
+        mouse.x * 0.25,
+        0.05
+      );
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(
+        groupRef.current.rotation.x,
+        -mouse.y * 0.15,
+        0.05
+      );
+    }
+  });
+
+  const nodesMap = useMemo(() => {
+    return ARCH_NODES.reduce((acc, node) => {
+      acc[node.id] = node;
+      return acc;
+    }, {});
+  }, []);
+
   return (
     <group ref={groupRef}>
-      {/* Background Static Connection Lines */}
-      <lineSegments>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            count={linePositions.length / 3}
-            array={linePositions}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <lineBasicMaterial
-          color="#334155"
-          transparent
-          opacity={0.32}
-          blending={THREE.AdditiveBlending}
+      <LivingMeshEdges nodesMap={nodesMap} />
+      {ARCH_NODES.map((node) => (
+        <LivingMeshNode
+          key={node.id}
+          node={node}
+          isHovered={hoveredNode?.id === node.id}
+          isSelected={selectedNode?.id === node.id}
+          onHover={onHoverNode}
+          onClick={onSelectNode}
         />
-      </lineSegments>
-
-      {/* Active Glowing Lines Connected to Hovered or Selected Node */}
-      {hoveredNode && (
-        <group>
-          {ARCH_CONNECTIONS.filter(([f, t]) => f === hoveredNode.id || t === hoveredNode.id).map(([f, t], i) => {
-            const from = nodeMap[f];
-            const to = nodeMap[t];
-            if (!from || !to) return null;
-            const pts = new Float32Array([
-              from.position[0], from.position[1], from.position[2],
-              to.position[0], to.position[1], to.position[2]
-            ]);
-            return (
-              <lineSegments key={i}>
-                <bufferGeometry>
-                  <bufferAttribute
-                    attach="attributes-position"
-                    count={2}
-                    array={pts}
-                    itemSize={3}
-                  />
-                </bufferGeometry>
-                <lineBasicMaterial
-                  color={hoveredNode.color}
-                  transparent
-                  opacity={0.9}
-                  blending={THREE.AdditiveBlending}
-                />
-              </lineSegments>
-            );
-          })}
-        </group>
-      )}
-
-      {/* Flowing Code/Data Packets */}
-      {!isReducedMotion &&
-        particles.map((p, idx) => (
-          <mesh key={idx} ref={(el) => (particleRefs.current[idx] = el)}>
-            <sphereGeometry args={[0.045, 8, 8]} />
-            <meshBasicMaterial color={p.color} transparent opacity={0.85} />
-          </mesh>
-        ))}
-
-      {/* Living Architecture Nodes */}
-      {ARCH_NODES.map((node) => {
-        const isHovered = hoveredNode?.id === node.id;
-        const isSelected = selectedNode?.id === node.id;
-        const scale = isHovered ? 1.35 : isSelected ? 1.25 : 1.0;
-
-        return (
-          <group key={node.id} position={node.position}>
-            {/* Core Node Sphere */}
-            <mesh
-              scale={scale}
-              onPointerOver={(e) => {
-                e.stopPropagation();
-                setHoveredNode(node);
-              }}
-              onPointerOut={(e) => {
-                e.stopPropagation();
-                setHoveredNode((prev) => (prev?.id === node.id ? null : prev));
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedNode((prev) => (prev?.id === node.id ? null : node));
-              }}
-            >
-              <sphereGeometry args={[node.size, node.isCore ? 24 : 16, node.isCore ? 24 : 16]} />
-              <meshStandardMaterial
-                color={node.color}
-                emissive={node.glowColor}
-                emissiveIntensity={isHovered ? 1.2 : node.isCore ? 0.8 : 0.45}
-                roughness={0.2}
-                metalness={0.8}
-              />
-            </mesh>
-
-            {/* Orbital Rings for DEVRA Core and Main Hubs */}
-            {(node.isCore || isHovered) && (
-              <mesh rotation={[Math.PI / 2.5, 0, 0]}>
-                <ringGeometry args={[node.size * 1.5, node.size * 1.7, 32]} />
-                <meshBasicMaterial
-                  color={node.color}
-                  transparent
-                  opacity={isHovered ? 0.75 : 0.35}
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
-            )}
-
-            {/* 3D Floating Node Tag */}
-            <Html
-              position={[0, node.size + 0.22, 0]}
-              center
-              distanceFactor={9}
-              className="pointer-events-none select-none"
-            >
-              <div
-                className={`px-2 py-0.5 rounded text-[10px] font-mono tracking-wide whitespace-nowrap transition-all duration-200 border backdrop-blur-md ${
-                  isSelected
-                    ? "bg-sky-500/90 text-white border-white font-bold shadow-lg"
-                    : isHovered
-                    ? "bg-slate-900/95 text-sky-300 border-sky-400 font-semibold shadow-lg shadow-sky-500/20"
-                    : node.isCore
-                    ? "bg-slate-900/90 text-sky-200 border-sky-500/40 font-medium"
-                    : "bg-[#0B0F17]/80 text-slate-400 border-slate-800"
-                }`}
-              >
-                {node.name}
-              </div>
-            </Html>
-          </group>
-        );
-      })}
+      ))}
     </group>
   );
 }
 
 export default function HeroCodebase3D() {
   const [hoveredNode, setHoveredNode] = useState(null);
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [isReducedMotion, setIsReducedMotion] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setIsReducedMotion(mq.matches);
-    const handler = (e) => setIsReducedMotion(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-
-  const activeNode = selectedNode || hoveredNode || ARCH_NODES[0];
+  const [selectedNode, setSelectedNode] = useState(ARCH_NODES[0]);
 
   return (
-    <div className="relative w-full h-[380px] sm:h-[460px] lg:h-[500px] rounded-2xl overflow-hidden bg-gradient-to-b from-[#0B0F19]/90 to-[#070A10]/95 border border-slate-800/80 shadow-2xl group">
-      {/* Architectural Background Grid Texture */}
-      <div className="absolute inset-0 bg-devra-lines opacity-40 pointer-events-none" />
+    <div className="relative w-full h-[520px] rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-b from-[#090D1A] to-[#060911] shadow-2xl shadow-violet-950/20">
+      {/* Background ambient lighting */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-10 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Top Status Header Badge */}
-      <div className="absolute top-3.5 left-4 z-10 flex items-center gap-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0D121F]/90 border border-slate-800 text-xs font-mono text-slate-300 backdrop-blur-md">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-white font-semibold">Living Codebase Topology</span>
-          <span className="text-slate-500">&bull;</span>
-          <span className="text-sky-400">9 Active Nodes</span>
-        </div>
-      </div>
-
-      {/* Top Right Legend / Hint */}
-      <div className="absolute top-3.5 right-4 z-10 hidden sm:flex items-center gap-2">
-        <span className="text-[10px] font-mono text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-800 backdrop-blur-md">
-          Hover to inspect &bull; Click to lock
-        </span>
-      </div>
-
-      {/* Interactive 3D Canvas */}
+      {/* R3F Canvas */}
       <Canvas
-        camera={{ position: [0, 0.4, 5.8], fov: 42 }}
-        className="cursor-pointer"
-        dpr={[1, 1.5]}
+        camera={{ position: [0, 0, 7.5], fov: 42 }}
+        dpr={[1, 2]}
         gl={{ antialias: true, alpha: true }}
       >
         <ambientLight intensity={0.7} />
-        <directionalLight position={[6, 10, 6]} intensity={1.4} color="#f8fafc" />
-        <pointLight position={[-6, -4, -4]} intensity={0.8} color="#38bdf8" />
-        <pointLight position={[4, -6, 2]} intensity={0.6} color="#818cf8" />
+        <directionalLight position={[10, 10, 5]} intensity={1.2} />
+        <pointLight position={[0, 0, 2]} intensity={1.5} color="#8B5CF6" />
+        <pointLight position={[-3, 2, -1]} intensity={1.0} color="#06B6D4" />
 
-        <Float speed={isReducedMotion ? 0 : 1.2} rotationIntensity={0.2} floatIntensity={0.4}>
-          <SceneGraph
-            hoveredNode={hoveredNode}
-            setHoveredNode={setHoveredNode}
-            selectedNode={selectedNode}
-            setSelectedNode={setSelectedNode}
-            isReducedMotion={isReducedMotion}
-          />
-        </Float>
+        <FloatingSceneGroup
+          hoveredNode={hoveredNode}
+          selectedNode={selectedNode}
+          onHoverNode={setHoveredNode}
+          onSelectNode={setSelectedNode}
+        />
       </Canvas>
 
-      {/* Bottom Floating Node Inspection Card */}
-      <div className="absolute bottom-3 left-3 right-3 sm:left-4 sm:right-auto sm:max-w-xs z-10 pointer-events-auto">
-        <div className="p-3.5 rounded-xl bg-[#0C111C]/90 border border-slate-800/90 shadow-xl backdrop-blur-md space-y-2 transition-all duration-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: activeNode.color }}
-              />
-              <span className="text-xs font-mono font-bold text-white">
-                {activeNode.name}
-              </span>
-            </div>
-            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-400 border border-slate-700/60">
-              {activeNode.domain}
+      {/* Floating HUD Telemetry Panel */}
+      <div className="absolute top-4 left-4 pointer-events-none select-none">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0A0E1A]/85 backdrop-blur-md border border-white/10 text-xs font-mono shadow-lg">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="text-white font-semibold">SPATIAL CODEBASE GRAPH</span>
+          <span className="text-slate-500">|</span>
+          <span className="text-violet-300">Live AST</span>
+        </div>
+      </div>
+
+      {/* Bottom Node Inspector Telemetry Bar */}
+      <div className="absolute bottom-4 inset-x-4 flex justify-between items-center pointer-events-none">
+        <div className="px-4 py-2.5 rounded-xl bg-[#0A0E1A]/90 backdrop-blur-md border border-white/10 text-xs font-mono shadow-xl flex items-center gap-4 pointer-events-auto">
+          <div className="flex items-center gap-2">
+            <span
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: (hoveredNode || selectedNode)?.color }}
+            ></span>
+            <span className="font-bold text-white font-mono">
+              {(hoveredNode || selectedNode)?.name}
+            </span>
+            <span className="text-slate-400 text-[11px]">
+              ({(hoveredNode || selectedNode)?.domain})
             </span>
           </div>
 
-          <p className="text-[11px] text-slate-400 leading-snug">
-            {activeNode.label}
-          </p>
+          <div className="h-3 w-px bg-white/10 hidden sm:block"></div>
 
-          {/* Micro-metrics grid */}
-          <div className="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[10px] font-mono">
-            {Object.entries(activeNode.metrics).map(([key, val]) => (
-              <div key={key} className="flex flex-col">
-                <span className="text-slate-500 uppercase">{key}</span>
-                <span className="text-slate-200 font-semibold truncate">{val}</span>
-              </div>
+          <div className="hidden sm:flex items-center gap-4 text-slate-300 text-[11px]">
+            {Object.entries((hoveredNode || selectedNode)?.metrics || {}).map(([key, val]) => (
+              <span key={key}>
+                <span className="text-slate-500 uppercase">{key}:</span>{" "}
+                <span className="text-violet-300 font-semibold">{val}</span>
+              </span>
             ))}
           </div>
+        </div>
+
+        <div className="text-[10px] font-mono text-slate-500 hidden md:block">
+          Click or hover nodes to inspect architecture
         </div>
       </div>
     </div>
