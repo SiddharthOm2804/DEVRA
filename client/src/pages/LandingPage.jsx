@@ -123,18 +123,18 @@ export const requireAuth = (req, res, next) => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#080B11] text-slate-100 flex flex-col antialiased selection:bg-sky-500/25 selection:text-sky-200">
+    <div className="min-h-screen bg-[#060911] text-slate-100 flex flex-col antialiased selection:bg-violet-500/25 selection:text-violet-200">
       {/* 1. Global Redesigned Sticky Navbar */}
       <Navbar />
 
       <main className="flex-1">
         {/* ==================================================
-            2. HERO SECTION — HIGHEST PRIORITY
+            2. HERO SECTION — CINEMATIC 3D WORKSPACE
             ================================================== */}
         <section id="hero" className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-20 sm:pt-20 sm:pb-28">
           {/* Subtle background ambient glow */}
-          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-sky-500/10 blur-[140px] rounded-full pointer-events-none" />
-          <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-indigo-500/10 blur-[130px] rounded-full pointer-events-none" />
+          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-violet-600/10 blur-[150px] rounded-full pointer-events-none" />
+          <div className="absolute top-1/3 right-1/4 w-[420px] h-[420px] bg-cyan-500/10 blur-[140px] rounded-full pointer-events-none" />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Content */}
@@ -144,53 +144,53 @@ export const requireAuth = (req, res, next) => {
               transition={{ duration: 0.55 }}
               className="lg:col-span-6 space-y-6"
             >
-              {/* Badge: AI ENGINEERING ASSISTANT */}
-              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-transparent border border-sky-500/25 text-xs font-mono text-sky-300">
+              {/* Badge: NEXT-GEN AI DEVELOPER PLATFORM */}
+              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-violet-500/15 via-cyan-500/10 to-transparent border border-violet-500/30 text-xs font-mono text-violet-300 shadow-sm shadow-violet-950/20">
                 <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-400" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-400" />
                 </span>
-                <span className="tracking-wider uppercase font-semibold">AI Engineering Assistant</span>
+                <span className="tracking-wider uppercase font-semibold">Autonomous Spatial AI Platform</span>
               </div>
 
               {/* Large Headline */}
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.08]">
-                Build Better. <br />
-                <span className="bg-gradient-to-r from-sky-400 via-cyan-300 to-indigo-400 bg-clip-text text-transparent glow-text-cyan">
-                  Ship Smarter.
+                Visualize Code. <br />
+                <span className="bg-gradient-to-r from-violet-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent glow-text-violet">
+                  Engineer Faster.
                 </span>
               </h1>
 
               {/* Description */}
-              <p className="text-base sm:text-lg text-slate-400 max-w-xl leading-relaxed">
-                Devra unifies deep AST architecture comprehension, automated pull request verification,
-                interactive 3D spatial codebase graphs, and autonomous agent workflows into one unified cockpit.
+              <p className="text-base sm:text-lg text-slate-300/80 max-w-xl leading-relaxed">
+                Step into a living 3D spatial engineering workspace. Devra combines deep AST syntax analysis,
+                automated pull request verification, persistent vector retrieval, and autonomous agents in real time.
               </p>
 
               {/* Primary & Secondary CTAs */}
               <div className="flex flex-wrap items-center gap-3.5 pt-2">
                 <Link to="/dashboard">
                   <Button variant="primary" size="lg" icon={ArrowRight}>
-                    Get Started
+                    Launch Console
                   </Button>
                 </Link>
                 <a href="#codebase-3d">
                   <Button variant="secondary" size="lg" icon={Box}>
-                    Explore Devra
+                    Explore Spatial 3D
                   </Button>
                 </a>
               </div>
 
               {/* Monospace Operational Metrics & Heartbeat */}
-              <div className="pt-6 flex flex-wrap items-center gap-6 text-xs font-mono text-slate-500 border-t border-slate-800/80">
+              <div className="pt-6 flex flex-wrap items-center gap-6 text-xs font-mono text-slate-400 border-t border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-200 font-semibold">14</span> Repositories Monitored
+                  <span className="text-white font-semibold">14</span> Repositories Monitored
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-emerald-400 font-semibold">96.4%</span> Code Quality
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sky-400 font-semibold">&lt; 1.2s</span> Review Latency
+                  <span className="text-cyan-300 font-semibold">&lt; 1.2s</span> Review Latency
                 </div>
                 <div className="flex items-center gap-2">
                   <span
@@ -198,7 +198,7 @@ export const requireAuth = (req, res, next) => {
                       serverHealth.status === "ok" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
                     }`}
                   />
-                  <span>API: {serverHealth.status === "ok" ? "Live" : "Standby"}</span>
+                  <span>Engine: {serverHealth.status === "ok" ? "Online" : "Standby"}</span>
                 </div>
               </div>
             </motion.div>

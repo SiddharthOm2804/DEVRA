@@ -17,7 +17,11 @@ import {
   Sparkles,
   Server,
   Play,
-  Network
+  Network,
+  Cpu,
+  Layers,
+  Zap,
+  Box
 } from "lucide-react";
 import {
   MOCK_METRICS,
@@ -31,6 +35,7 @@ import Card from "../components/ui/Card";
 import StatCard from "../components/ui/StatCard";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
+import CodebaseVisualizer3D from "../components/visualization/CodebaseVisualizer3D";
 
 export default function DashboardPage() {
   const { user, activeRepo } = useAuth();
@@ -39,6 +44,7 @@ export default function DashboardPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanMessage, setScanMessage] = useState(null);
   const [reviewFilter, setReviewFilter] = useState("all");
+  const [activeAnalysis, setActiveAnalysis] = useState(null);
 
   useEffect(() => {
     const loadRepos = async () => {
@@ -77,6 +83,7 @@ export default function DashboardPage() {
   };
 
   const displayRepos = repositories.length > 0 ? repositories : MOCK_REPOSITORIES;
+  const currentRepoObj = displayRepos.find((r) => r.name === activeRepo) || displayRepos[0];
 
   const filteredReviews = MOCK_REVIEWS.filter((r) => {
     if (reviewFilter === "passed") return r.status === "passed";
@@ -89,14 +96,15 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">
-              Engineering Console
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+              <span>Engineering Command Center</span>
             </h1>
-            <Badge variant="cyan" size="sm">PRO</Badge>
+            <Badge variant="violet" size="sm">SPATIAL PRO</Badge>
           </div>
-          <p className="text-xs text-slate-400">
-            Real-time codebase health and automated review metrics for <span className="text-slate-200 font-mono font-medium">{user?.organization}</span>
+          <p className="text-xs text-slate-400 font-mono">
+            Autonomous AST architecture verification &amp; codebase telemetry for{" "}
+            <span className="text-violet-300 font-semibold">{user?.organization || "Engineering Org"}</span>
           </p>
         </div>
 
@@ -124,26 +132,26 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-3 rounded-lg bg-sky-500/10 border border-sky-500/20 text-xs text-sky-300 font-mono flex items-center justify-between"
+          className="p-3 rounded-lg bg-violet-950/40 border border-violet-500/30 text-xs text-violet-300 font-mono flex items-center justify-between shadow-lg"
         >
           <span>{scanMessage}</span>
           <button onClick={() => setScanMessage(null)} className="text-slate-400 hover:text-white">✕</button>
         </motion.div>
       )}
 
-      {/* 1. Core Metrics Grid (Required: Repository count, Code quality, Security score, Open issues) */}
+      {/* 1. Core Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Repository Count"
+          title="Repositories Monitored"
           value={displayRepos.length}
-          subtitle="Monitored by Devra"
+          subtitle="Indexed in Redis Vector"
           icon={FolderGit2}
           trend={MOCK_METRICS.repositoryTrend}
           trendPositive={true}
         />
 
         <StatCard
-          title="Code Quality"
+          title="AST Code Quality"
           value={`${MOCK_METRICS.codeQuality}%`}
           badgeText={MOCK_METRICS.codeQualityGrade}
           progress={MOCK_METRICS.codeQuality}
@@ -163,7 +171,7 @@ export default function DashboardPage() {
         />
 
         <StatCard
-          title="Open Issues"
+          title="Open PR Deficiencies"
           value={MOCK_METRICS.openIssues}
           subtitle="6 bugs · 11 refactors"
           icon={AlertCircle}
@@ -172,29 +180,78 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* Dedicated Interactive 3D Codebase Cockpit Panel on Dashboard */}
+      <Card className="p-0 overflow-hidden border-white/10 shadow-2xl relative">
+        <div className="p-4 bg-[#0A0E1A]/90 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-violet-950/50 border border-violet-500/30 flex items-center justify-center text-violet-400">
+              <Box className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-white font-mono tracking-wide">
+                  Live 3D AST Spatial Cockpit
+                </h2>
+                <Badge variant="cyan" size="sm">{activeRepo}</Badge>
+              </div>
+              <p className="text-[11px] font-mono text-slate-400">
+                Multi-level spatial visualization of files, modules, and cross-boundary dependencies
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => {
+                if (currentRepoObj?._id) navigate(`/repositories/${currentRepoObj._id}`);
+                else navigate("/repositories");
+              }}
+              variant="secondary"
+              size="xs"
+              icon={ArrowUpRight}
+            >
+              Full Screen 3D Explorer
+            </Button>
+          </div>
+        </div>
+
+        {/* Embedded 3D Scene viewport */}
+        <div className="h-[460px] w-full relative bg-[#060911]">
+          <CodebaseVisualizer3D
+            repository={currentRepoObj}
+            analysis={activeAnalysis}
+            onSelectNode={(node) => {
+              if (node?.filePath && currentRepoObj?._id) {
+                navigate(`/repositories/${currentRepoObj._id}`);
+              }
+            }}
+          />
+        </div>
+      </Card>
+
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column (8 cols): Recent Reviews & Repository Health */}
         <div className="lg:col-span-8 space-y-6">
           {/* Recent Reviews Card */}
           <Card className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
               <div>
                 <h2 className="text-base font-bold text-white flex items-center gap-2">
-                  <GitPullRequest className="w-4 h-4 text-sky-400" />
-                  <span>Recent Code Reviews</span>
+                  <GitPullRequest className="w-4 h-4 text-violet-400" />
+                  <span>Recent Automated Code Reviews</span>
                 </h2>
-                <p className="text-xs text-slate-400">
-                  Automated pull request analysis and rule validation
+                <p className="text-xs text-slate-400 font-mono">
+                  AST syntactic verification, security audits, and rule validations
                 </p>
               </div>
 
               {/* Filter Pills */}
-              <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-lg border border-slate-800 text-[11px] font-mono">
+              <div className="flex items-center gap-1.5 bg-[#090D18] p-1 rounded-lg border border-white/10 text-[11px] font-mono">
                 <button
                   onClick={() => setReviewFilter("all")}
                   className={`px-2.5 py-1 rounded-md transition-colors ${
-                    reviewFilter === "all" ? "bg-slate-800 text-white font-medium" : "text-slate-400 hover:text-slate-200"
+                    reviewFilter === "all" ? "bg-violet-950/60 text-violet-300 font-semibold" : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
                   All
@@ -202,7 +259,7 @@ export default function DashboardPage() {
                 <button
                   onClick={() => setReviewFilter("passed")}
                   className={`px-2.5 py-1 rounded-md transition-colors ${
-                    reviewFilter === "passed" ? "bg-emerald-500/20 text-emerald-400 font-medium" : "text-slate-400 hover:text-slate-200"
+                    reviewFilter === "passed" ? "bg-emerald-500/20 text-emerald-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
                   Passed
@@ -210,7 +267,7 @@ export default function DashboardPage() {
                 <button
                   onClick={() => setReviewFilter("needs_attention")}
                   className={`px-2.5 py-1 rounded-md transition-colors ${
-                    reviewFilter === "needs_attention" ? "bg-amber-500/20 text-amber-400 font-medium" : "text-slate-400 hover:text-slate-200"
+                    reviewFilter === "needs_attention" ? "bg-amber-500/20 text-amber-400 font-semibold" : "text-slate-400 hover:text-slate-200"
                   }`}
                 >
                   Attention
@@ -219,7 +276,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Reviews List */}
-            <div className="divide-y divide-slate-800/60">
+            <div className="divide-y divide-white/5">
               {filteredReviews.map((review) => (
                 <div
                   key={review.id}
@@ -230,13 +287,13 @@ export default function DashboardPage() {
                       <span className="text-xs font-mono font-semibold text-slate-400">
                         #{review.prNumber}
                       </span>
-                      <h3 className="text-sm font-semibold text-white group-hover:text-sky-400 transition-colors">
+                      <h3 className="text-sm font-semibold text-white group-hover:text-violet-300 transition-colors">
                         {review.title}
                       </h3>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-slate-400">
-                      <span className="text-sky-300">{review.repoName}</span>
+                      <span className="text-cyan-300">{review.repoName}</span>
                       <span>&bull;</span>
                       <div className="flex items-center gap-1.5">
                         <img
@@ -276,19 +333,19 @@ export default function DashboardPage() {
 
           {/* Repository Health Section */}
           <Card className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div>
                 <h2 className="text-base font-bold text-white flex items-center gap-2">
                   <Activity className="w-4 h-4 text-emerald-400" />
                   <span>Repository Health</span>
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-400 font-mono">
                   Continuous test coverage, maintainability, and vulnerability tracking
                 </p>
               </div>
 
-              <Link to="/repositories" className="text-xs text-sky-400 hover:text-sky-300 font-medium flex items-center gap-1">
-                <span>All Repos</span>
+              <Link to="/repositories" className="text-xs text-violet-400 hover:text-violet-300 font-mono font-medium flex items-center gap-1">
+                <span>All Repositories</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -298,15 +355,15 @@ export default function DashboardPage() {
                 <div
                   key={repo._id || repo.id || repo.name}
                   onClick={() => navigate(repo._id ? `/repositories/${repo._id}` : "/repositories")}
-                  className="p-3.5 rounded-lg bg-slate-900/60 border border-slate-800/80 space-y-2.5 hover:border-slate-700 transition-colors cursor-pointer group"
+                  className="p-3.5 rounded-lg bg-[#0C1120] border border-white/10 space-y-2.5 hover:border-violet-500/40 transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span
                         className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: repo.languageColor }}
+                        style={{ backgroundColor: repo.languageColor || "#8B5CF6" }}
                       ></span>
-                      <span className="font-mono text-xs font-semibold text-white group-hover:text-sky-400 transition-colors">
+                      <span className="font-mono text-xs font-semibold text-white group-hover:text-violet-300 transition-colors">
                         {repo.name}
                       </span>
                     </div>
@@ -316,10 +373,10 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Progress bar */}
-                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden border border-white/5">
                     <div
                       className={`h-full rounded-full ${
-                        repo.health > 92 ? "bg-emerald-500" : "bg-sky-500"
+                        repo.health > 92 ? "bg-emerald-400" : "bg-cyan-400"
                       }`}
                       style={{ width: `${repo.health}%` }}
                     ></div>
@@ -338,23 +395,42 @@ export default function DashboardPage() {
 
         {/* Right Column (4 cols): Activity Timeline & Extension Status */}
         <div className="lg:col-span-4 space-y-6">
+          {/* Quick AI Action Card */}
+          <Card className="space-y-3 bg-gradient-to-b from-[#11172A] to-[#0A0E1A] border-violet-500/30 shadow-lg shadow-violet-950/20">
+            <div className="flex items-center gap-2 text-violet-400 text-xs font-mono font-medium">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AI Codebase Assistant</span>
+            </div>
+            <h3 className="text-sm font-semibold text-white">
+              Query or refactor {activeRepo}
+            </h3>
+            <p className="text-xs text-slate-400 leading-relaxed font-mono">
+              Ask natural language architectural questions or generate AST tests with full repository context.
+            </p>
+            <Link to="/chat" className="block pt-1">
+              <Button variant="primary" size="sm" className="w-full" icon={ArrowUpRight}>
+                Start AI Session
+              </Button>
+            </Link>
+          </Card>
+
           {/* Activity Timeline */}
           <Card className="space-y-4">
-            <div className="border-b border-slate-800/80 pb-3">
+            <div className="border-b border-white/10 pb-3">
               <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Activity className="w-4 h-4 text-sky-400" />
+                <Activity className="w-4 h-4 text-cyan-400" />
                 <span>Activity Timeline</span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 font-mono">
                 Audit feed across code reviews and scanners
               </p>
             </div>
 
-            <div className="relative pl-6 space-y-5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-slate-800">
+            <div className="relative pl-6 space-y-5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-white/10">
               {MOCK_ACTIVITY.map((item) => (
                 <div key={item.id} className="relative space-y-1">
                   {/* Timeline dot */}
-                  <span className="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-slate-900 border-2 border-sky-400"></span>
+                  <span className="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-[#060911] border-2 border-violet-400"></span>
 
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-white">{item.title}</span>
@@ -366,58 +442,10 @@ export default function DashboardPage() {
                   </p>
 
                   <div className="text-[10px] font-mono text-slate-500 pt-0.5">
-                    Triggered by: <span className="text-slate-300">{item.user}</span>
+                    Triggered by: <span className="text-slate-300 font-semibold">{item.user}</span>
                   </div>
                 </div>
               ))}
-            </div>
-          </Card>
-
-          {/* Quick AI Action Card */}
-          <Card className="space-y-3 bg-[#0C111C] border-sky-500/20">
-            <div className="flex items-center gap-2 text-sky-400 text-xs font-mono font-medium">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>AI Codebase Assistant</span>
-            </div>
-            <h3 className="text-sm font-semibold text-white">
-              Query or refactor {activeRepo}
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Ask natural language architectural questions or generate AST tests with full repository context.
-            </p>
-            <Link to="/chat" className="block pt-1">
-              <Button variant="primary" size="sm" className="w-full" icon={ArrowUpRight}>
-                Start AI Session
-              </Button>
-            </Link>
-          </Card>
-
-          {/* 3D Codebase Galaxy Card */}
-          <Card className="space-y-3 bg-[#0C111C] border-purple-500/20">
-            <div className="flex items-center gap-2 text-purple-400 text-xs font-mono font-medium">
-              <Network className="w-3.5 h-3.5" />
-              <span>3D Codebase Galaxy</span>
-            </div>
-            <h3 className="text-sm font-semibold text-white">
-              Spatial AST Topology
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Explore interconnected nodes across Frontend, Backend, Database, Services, and Utilities in WebGL.
-            </p>
-            <div className="block pt-1">
-              <Button
-                onClick={() => {
-                  const target = displayRepos.find((r) => r.name === activeRepo) || displayRepos[0];
-                  if (target?._id) navigate(`/repositories/${target._id}`);
-                  else navigate("/repositories");
-                }}
-                variant="secondary"
-                size="sm"
-                className="w-full"
-                icon={Network}
-              >
-                Launch 3D Explorer
-              </Button>
             </div>
           </Card>
         </div>

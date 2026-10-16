@@ -120,10 +120,10 @@ function renderInlineLinks(text, onInspectSource) {
         <button
           key={i}
           onClick={() => onInspectSource?.({ filePath: pathWithLine })}
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/30 text-sky-300 hover:text-white hover:bg-sky-500/20 font-semibold transition-colors mx-0.5"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-500/10 border border-violet-500/30 text-violet-300 hover:text-white hover:bg-violet-500/20 font-semibold transition-colors mx-0.5"
           title="Click to view file context"
         >
-          <FileCode className="w-3 h-3" />
+          <FileCode className="w-3 h-3 text-cyan-400" />
           <span>{pathWithLine}</span>
         </button>
       );
@@ -143,9 +143,10 @@ function CodeBlockRenderer({ code, language }) {
   };
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-[#070A0F] overflow-hidden my-3">
-      <div className="px-4 py-2 bg-[#0C101A] border-b border-slate-800/80 flex items-center justify-between">
-        <span className="text-[11px] font-mono uppercase text-sky-400 font-semibold">
+    <div className="rounded-xl border border-white/10 bg-[#060911] overflow-hidden my-3 shadow-xl">
+      <div className="px-4 py-2 bg-[#0C111F] border-b border-white/10 flex items-center justify-between">
+        <span className="text-[11px] font-mono uppercase text-violet-300 font-semibold flex items-center gap-1.5">
+          <Code2 className="w-3.5 h-3.5 text-cyan-400" />
           {language}
         </span>
         <button
@@ -396,22 +397,22 @@ Try one of the quick suggestions below or type your inquiry.`,
       </aside>
 
       {/* MAIN CHAT WORKSPACE */}
-      <main className="flex-1 flex flex-col justify-between overflow-hidden bg-[#0A0E17]">
+      <main className="flex-1 flex flex-col justify-between overflow-hidden bg-[#060911]">
         {/* Workspace Top Header */}
-        <div className="h-14 border-b border-slate-800/80 px-6 flex items-center justify-between bg-[#0B0F17] shrink-0">
+        <div className="h-14 border-b border-white/10 px-6 flex items-center justify-between bg-[#0A0E1A] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+            <div className="w-8 h-8 rounded-lg bg-violet-950/50 border border-violet-500/30 flex items-center justify-center text-violet-400">
               <Bot className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xs font-bold text-white font-mono tracking-wide">
-                  Codebase Knowledge Assistant
+                  Autonomous Codebase Spatial Chat
                 </h2>
-                <Badge variant="cyan" size="sm">Semantic Vector Index</Badge>
+                <Badge variant="violet" size="sm">Persistent Vector RAG</Badge>
               </div>
               <p className="text-[10px] font-mono text-slate-400">
-                Scope: <span className="text-sky-300 font-semibold">{selectedRepo?.name}</span> &bull; Citations Enabled
+                Scope: <span className="text-violet-300 font-semibold">{selectedRepo?.name}</span> &bull; AST Grounded Citations
               </p>
             </div>
           </div>
@@ -419,7 +420,7 @@ Try one of the quick suggestions below or type your inquiry.`,
           <div className="flex items-center gap-3">
             <button
               onClick={handleClearHistory}
-              className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 transition-colors"
+              className="p-2 rounded-lg bg-[#0E1526] border border-white/10 text-slate-400 hover:text-rose-400 transition-colors"
               title="Clear Thread"
             >
               <Trash2 className="w-4 h-4" />
@@ -452,11 +453,11 @@ Try one of the quick suggestions below or type your inquiry.`,
                 <div
                   className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold ${
                     isUser
-                      ? "bg-sky-500 text-white font-mono"
-                      : "bg-[#0F1422] border border-slate-700 text-sky-400"
+                      ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-mono shadow-md shadow-violet-950/40"
+                      : "bg-[#0E1526] border border-violet-500/30 text-violet-300 shadow-sm"
                   }`}
                 >
-                  {isUser ? "You" : <Cpu className="w-4 h-4" />}
+                  {isUser ? "You" : <Cpu className="w-4 h-4 text-cyan-400" />}
                 </div>
 
                 {/* Message Bubble Container */}
@@ -464,8 +465,8 @@ Try one of the quick suggestions below or type your inquiry.`,
                   <div
                     className={`p-5 rounded-2xl text-xs leading-relaxed ${
                       isUser
-                        ? "bg-sky-600 text-white font-mono shadow-md"
-                        : "bg-[#0D121F] border border-slate-800 text-slate-200 shadow-xl"
+                        ? "bg-gradient-to-r from-violet-700 to-indigo-700 text-white font-mono shadow-lg shadow-violet-950/30 border border-violet-400/20"
+                        : "bg-[#0A0E1A] border border-white/10 text-slate-200 shadow-2xl"
                     }`}
                   >
                     {isUser ? (

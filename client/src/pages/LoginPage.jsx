@@ -149,9 +149,9 @@ export default function LoginPage() {
 
           <div className="pt-8 max-w-lg space-y-3">
             <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-white leading-tight">
-              Your AI Engineering Companion.
+              Spatial AI Engineering Workspace.
             </h2>
-            <p className="text-sm text-slate-400 leading-relaxed font-sans">
+            <p className="text-sm text-slate-300/80 leading-relaxed font-sans">
               Continuous AST code review, WebGL codebase intelligence, and vector-backed repository reasoning in a unified developer console.
             </p>
           </div>
@@ -159,23 +159,23 @@ export default function LoginPage() {
 
         {/* Middle Feature Telemetry Card */}
         <div className="relative z-10 my-8 max-w-lg">
-          <div className="p-5 rounded-2xl bg-[#0B0F19]/90 border border-slate-800/90 shadow-2xl backdrop-blur-md space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+          <div className="p-5 rounded-2xl bg-[#0A0E1A]/90 border border-white/10 shadow-2xl backdrop-blur-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
                 <span className="text-xs font-mono font-medium text-slate-300">
                   Devra Architecture Engine v2.4
                 </span>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-violet-500/15 text-violet-300 border border-violet-500/30">
                 ACTIVE
               </span>
             </div>
 
             {/* Terminal snippet */}
-            <div className="p-3 rounded-xl bg-[#05070B] border border-slate-900 font-mono text-xs text-slate-400 space-y-1.5">
+            <div className="p-3 rounded-xl bg-[#060911] border border-white/10 font-mono text-xs text-slate-400 space-y-1.5 shadow-inner">
               <div className="flex items-center gap-2 text-slate-300">
-                <span className="text-sky-400">$</span>
+                <span className="text-cyan-400">$</span>
                 <span>devra analyze --active-repo core</span>
               </div>
               <div className="text-emerald-400 flex items-center gap-1.5 text-[11px]">
@@ -186,21 +186,21 @@ export default function LoginPage() {
                 <Check className="w-3.5 h-3.5" />
                 <span>Continuous PR telemetry initialized</span>
               </div>
-              <div className="text-sky-400 flex items-center gap-1.5 text-[11px]">
-                <Cpu className="w-3.5 h-3.5" />
+              <div className="text-violet-300 flex items-center gap-1.5 text-[11px]">
+                <Cpu className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Zero architectural circularities detected</span>
               </div>
             </div>
 
             {/* Feature Pills */}
             <div className="grid grid-cols-2 gap-2.5 pt-1 text-[11px] font-mono text-slate-400">
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800/60">
-                <ShieldCheck className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                <span className="truncate">AST Vulnerability Scans</span>
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-[#0E1526] border border-white/10">
+                <ShieldCheck className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+                <span className="truncate text-slate-300">AST Security Scans</span>
               </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-900/60 border border-slate-800/60">
-                <Layers className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span className="truncate">3D Dependency Topology</span>
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-[#0E1526] border border-white/10">
+                <Layers className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span className="truncate text-slate-300">3D Dependency Graph</span>
               </div>
             </div>
           </div>
@@ -209,8 +209,8 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 font-mono">
           <span>&copy; {new Date().getFullYear()} DEVRA Inc.</span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span className="flex items-center gap-1.5 text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             All Systems Operational
           </span>
         </div>
@@ -229,7 +229,7 @@ export default function LoginPage() {
             </span>
           </Link>
           <p className="text-xs text-slate-400 font-sans">
-            Your AI Engineering Companion.
+            Spatial AI Engineering Workspace.
           </p>
         </div>
 
@@ -244,13 +244,13 @@ export default function LoginPage() {
             <h1 className="text-2xl font-bold text-white tracking-tight font-sans">
               Sign in to DEVRA
             </h1>
-            <p className="text-xs text-slate-400 font-sans">
+            <p className="text-xs text-slate-400 font-sans font-mono">
               Welcome back. Enter your credentials to access your repositories.
             </p>
           </div>
 
           {/* Login Card */}
-          <Card className="p-6 sm:p-7 space-y-5 border-slate-800 bg-[#0C101A] shadow-xl">
+          <Card className="p-6 sm:p-7 space-y-5 border-white/10 bg-[#0A0E1A]/95 shadow-2xl">
             {/* Friendly Error Banner */}
             {displayError && (
               <motion.div

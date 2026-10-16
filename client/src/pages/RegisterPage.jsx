@@ -107,16 +107,16 @@ export default function RegisterPage() {
       {/* LEFT COLUMN: Devra Branding */}
       <div className="relative hidden lg:flex lg:w-1/2 flex-col justify-between p-12 xl:p-16 border-r border-slate-800/80 bg-[#06090F] overflow-hidden">
         <div className="absolute inset-0 bg-devra-grid pointer-events-none opacity-40"></div>
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-sky-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-violet-600/10 rounded-full blur-[140px] pointer-events-none"></div>
 
         <div className="relative z-10 space-y-4">
           <Link to="/" className="inline-flex items-center gap-3 group">
             <DevraLogo size="md" showText={false} />
             <div className="flex flex-col">
-              <span className="text-2xl font-bold tracking-tight text-white font-sans group-hover:text-sky-400 transition-colors">
+              <span className="text-2xl font-bold tracking-tight text-white font-sans group-hover:text-violet-300 transition-colors">
                 DEVRA
               </span>
-              <span className="text-[11px] font-mono text-slate-500 uppercase tracking-widest">
+              <span className="text-[11px] font-mono text-slate-400 uppercase tracking-widest">
                 Developer Console
               </span>
             </div>
@@ -124,9 +124,9 @@ export default function RegisterPage() {
 
           <div className="pt-8 max-w-lg space-y-3">
             <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-white leading-tight">
-              Create your Devra workspace.
+              Create your spatial engineering workspace.
             </h2>
-            <p className="text-sm text-slate-400 leading-relaxed font-sans">
+            <p className="text-sm text-slate-300/80 leading-relaxed font-sans">
               Join engineering teams utilizing continuous AST review, automated pull request audits, and interactive 3D codebase topology graphs.
             </p>
           </div>
@@ -134,7 +134,7 @@ export default function RegisterPage() {
 
         {/* Feature List */}
         <div className="relative z-10 my-8 max-w-lg space-y-3 font-sans">
-          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#0B0F19]/90 border border-slate-800">
+          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#0A0E1A]/90 border border-white/10 shadow-lg">
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
             <div>
               <h4 className="text-xs font-semibold text-white">Full AST Dependency Intelligence</h4>
@@ -144,8 +144,8 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#0B0F19]/90 border border-slate-800">
-            <ShieldCheck className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-[#0A0E1A]/90 border border-white/10 shadow-lg">
+            <ShieldCheck className="w-5 h-5 text-violet-400 shrink-0 mt-0.5" />
             <div>
               <h4 className="text-xs font-semibold text-white">Automated Security Audits</h4>
               <p className="text-[11px] text-slate-400 leading-relaxed">
@@ -157,8 +157,8 @@ export default function RegisterPage() {
 
         <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 font-mono">
           <span>&copy; {new Date().getFullYear()} DEVRA Inc.</span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span className="flex items-center gap-1.5 text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             Ready for Developer Onboarding
           </span>
         </div>
@@ -174,7 +174,7 @@ export default function RegisterPage() {
             </span>
           </Link>
           <p className="text-xs text-slate-400 font-sans">
-            Your AI Engineering Companion.
+            Spatial AI Engineering Workspace.
           </p>
         </div>
 
