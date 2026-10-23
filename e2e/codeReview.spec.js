@@ -7,7 +7,7 @@ test.describe("AI Code Review and GitHub Webhook Visibility Workflows", () => {
     await authenticateSession(page, TEST_USERS.ARCHITECT, "/dashboard");
 
     // Navigate to Code Reviews via App navigation link
-    const reviewsLink = page.getByRole("link", { name: /Code Reviews/i });
+    const reviewsLink = page.getByRole("link", { name: /Code Reviews/i }).first();
     await expect(reviewsLink).toBeVisible({ timeout: 15000 });
     await reviewsLink.click();
     await page.waitForURL(/\/reviews/);

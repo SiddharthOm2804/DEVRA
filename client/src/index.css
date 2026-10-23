@@ -3,88 +3,114 @@
 @tailwind utilities;
 
 :root {
-  font-family: 'Geist', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  color-scheme: dark;
+  --font-ui: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+  --font-code: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-ui);
   letter-spacing: -0.012em;
+
+  /* ABYSSAL JADE COLOR SYSTEM */
+  --bg-dark: #070B0D;           /* Abyssal Dark */
+  --bg-dark-surface: #0E1517;   /* Elevated Card */
+  --bg-secondary: #141E20;      /* Secondary Surface */
+  --border-dark: #243437;       /* Border */
+  --border-light: #355052;
+  --text-primary: #F1F4ED;      /* Opal Ivory */
+  --text-secondary: #ADBCB7;    /* Secondary Text */
+  --text-muted: #788B86;        /* Muted Text */
+
+  --accent-jade: #61DCC4;       /* Mineral Jade */
+  --accent-citron: #D8E78A;     /* Signature Citron */
+  --color-error: #F17C78;
+
+  /* Legacy brand token aliases mapped to Abyssal Jade */
+  --bg-light: #0B1113;
+  --bg-card: #0E1517;
+  --text-light-primary: #F1F4ED;
+  --text-light-muted: #ADBCB7;
+  --text-dark-primary: #F1F4ED;
+  --text-dark-muted: #788B86;
+  --accent-lavender: #61DCC4;
+  --accent-blue: #D8E78A;
 }
 
 code, pre, .font-mono {
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-code);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #060911;
-  color: #F8FAFC;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
   overflow-x: hidden;
-  selection-background-color: rgba(139, 92, 246, 0.3);
-  selection-color: #DDD6FE;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Atmospheric spatial grid backgrounds */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 1rem;
+  -webkit-text-size-adjust: 100%;
+}
+
+button, a, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a {
+  touch-action: manipulation;
+}
+
+::selection {
+  background: rgba(97, 220, 196, 0.27);
+  color: #F1F4ED;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-jade) !important;
+  outline-offset: 3px;
+}
+
+/* Subtle architectural grid pattern */
 .bg-devra-grid {
   background-size: 32px 32px;
-  background-image: 
-    radial-gradient(circle, rgba(139, 92, 246, 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(97, 220, 196, 0.09) 1px, transparent 1px);
 }
 
-.bg-devra-lines {
-  background-size: 48px 48px;
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+.bg-devra-grid-light {
+  background-size: 32px 32px;
+  background-image: radial-gradient(circle, rgba(97, 220, 196, 0.06) 1px, transparent 1px);
 }
 
-/* Atmospheric Radial Lights */
-.bg-radial-violet {
-  background: radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.15) 0%, rgba(6, 9, 17, 0) 70%);
+/* Atmospheric Radials */
+.bg-radial-hero {
+  background: radial-gradient(circle at 50% 0%, rgba(97, 220, 196, 0.12) 0%, rgba(7, 11, 13, 0) 70%);
 }
 
-.bg-radial-cyan {
-  background: radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.1) 0%, rgba(6, 9, 17, 0) 60%);
+.bg-radial-citron {
+  background: radial-gradient(circle at 100% 100%, rgba(216, 231, 138, 0.09) 0%, rgba(7, 11, 13, 0) 65%);
 }
 
-/* Glassmorphism & Cyber Panels */
-.glass-panel {
-  background: rgba(10, 14, 26, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Card and Surface Classes */
+.card-light {
+  background-color: var(--bg-dark-surface);
+  border: 1px solid var(--border-dark);
+  color: var(--text-primary);
+  box-shadow: 0 8px 28px -18px rgba(0, 0, 0, 0.9);
 }
 
-.glass-panel-glow {
-  background: rgba(12, 17, 32, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(139, 92, 246, 0.28);
-  box-shadow: 0 0 35px -8px rgba(139, 92, 246, 0.22);
-}
-
-.glass-panel-cyan {
-  background: rgba(10, 18, 30, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(6, 182, 212, 0.25);
-  box-shadow: 0 0 35px -8px rgba(6, 182, 212, 0.18);
-}
-
-.card-gradient {
-  background: linear-gradient(180deg, rgba(16, 22, 40, 0.7) 0%, rgba(10, 14, 26, 0.95) 100%);
-}
-
-/* Glow Text Treatments */
-.glow-text-violet {
-  text-shadow: 0 0 24px rgba(139, 92, 246, 0.55);
-}
-
-.glow-text-cyan {
-  text-shadow: 0 0 24px rgba(6, 182, 212, 0.55);
-}
-
-.glow-text-magenta {
-  text-shadow: 0 0 24px rgba(236, 72, 153, 0.55);
+.card-dark {
+  background-color: var(--bg-dark-surface);
+  border: 1px solid var(--border-dark);
+  color: #F1F4ED;
 }
 
 /* Custom subtle scrollbars */
@@ -93,15 +119,45 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #060911;
+  background: #070B0D;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1E293B;
+  background: #243437;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #8B5CF6;
+  background: #61DCC4;
 }
+
+/* Dark mode scrollbars */
+.dark-scroll::-webkit-scrollbar-track {
+  background: #070B0D;
+}
+.dark-scroll::-webkit-scrollbar-thumb {
+  background: #243437;
+}
+.dark-scroll::-webkit-scrollbar-thumb:hover {
+  background: #61DCC4;
+}
+
+/* Keep legacy light utility classes in step with the app's dark-first palette. */
+.dark .bg-white,
+.dark .hover\:bg-white:hover { background-color: #10191B; }
+.dark .bg-slate-50,
+.dark .hover\:bg-slate-50:hover { background-color: #0B1214; }
+.dark .bg-slate-100 { background-color: #131D1F; }
+.dark .bg-indigo-50 { background-color: rgba(97, 220, 196, 0.09); }
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-indigo-100 { border-color: #243437; }
+.dark .divide-slate-200\/80 > :not([hidden]) ~ :not([hidden]) { border-color: #243437; }
+.dark .text-slate-900,
+.dark .hover\:text-slate-900:hover { color: #F1F4ED; }
+.dark .text-slate-800 { color: #DCE5DF; }
+.dark .text-slate-700 { color: #C0CEC8; }
+.dark .text-slate-600 { color: #ADBCB7; }
+.dark .text-slate-500 { color: #859792; }
+.dark .text-indigo-700 { color: #61DCC4; }
 
 /* Respect user reduced motion preference */
 @media (prefers-reduced-motion: reduce) {

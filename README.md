@@ -2,6 +2,8 @@
 
 DEVRA is an enterprise-grade AI developer platform uniting full-stack codebase intelligence, 3D interactive spatial dependency graphs with Level-of-Detail (LOD) optimization, automated AST code reviews, persistent vector RAG search, autonomous AI Agent workflows with live SSE streaming, and an editor-native VS Code extension.
 
+> **New to Devra?** Start with the plain-language [Beginner Guide](docs/BEGINNER_GUIDE.md) for setup, the first in-app workflow, and common fixes. The guide is the recommended starting point; the rest of this README is the detailed technical reference.
+
 ---
 
 ## Table of Contents
@@ -147,54 +149,71 @@ Devra/
 - **Node.js**: v20.x LTS or higher
 - **npm**: v10.x or higher
 - **MongoDB**: v6.0 or v7.0 (Local, Docker, or MongoDB Atlas replica set)
-- **Redis Stack**: v7.0+ (with RediSearch module enabled; `redis/redis-stack-server:latest` or Redis Cloud)
+- **Redis Stack**: Optional for local development; required for persistent vector storage
 - **Docker & Docker Compose**: Optional for containerized deployments
-- **AI API Key**: Google Gemini (`AI_API_KEY`) or OpenAI Key (`OPENAI_API_KEY`)
+- **AI API Key**: Optional; Google Gemini (`AI_API_KEY`) or OpenAI (`OPENAI_API_KEY`) enables AI-powered features
 
 ---
 
 ## Quickstart & Local Development
 
-### 1. Installation
-Install all dependencies across monorepo workspaces (`client`, `server`, `extension`, `shared`):
+For the detailed first-time walkthrough, see [docs/BEGINNER_GUIDE.md](docs/BEGINNER_GUIDE.md). The short version below assumes Node.js 20+, npm, and Docker Desktop are installed.
+
+### 1. Install dependencies
+
+Run this once from the project root. npm installs all configured workspaces (web app, API, extension, and shared code):
 ```bash
-npm run install:all
+npm run setup
 ```
 
-### 2. Environment Setup
-Create local environment files from the provided templates:
-```bash
-cp .env.example .env
-cp server/.env.example server/.env
-cp client/.env.example client/.env
-```
-Ensure `server/.env` contains your `JWT_SECRET`, `AI_API_KEY`, `MONGODB_URI`, and `REDIS_HOST`.
+### 2. Start the database
 
-### 3. Launch Development Environment
-Run backend API and frontend client concurrently:
+MongoDB is required to register and save data. Docker Compose starts it locally:
+```bash
+docker compose up -d mongodb
+```
+
+Redis is optional for local learning; Devra can use its in-memory vector store if Redis is unavailable. AI-powered features need an API key. Copy `.env.example` to `.env` and add `AI_PROVIDER=gemini` and `AI_API_KEY=your_key` if you want to configure AI. Keep `.env` private and never commit API keys. When the app is running locally, API requests go through the Vite proxy to port `5001`; you do not need to configure `VITE_API_URL`.
+
+If you do not already have a root `.env`, copy `.env.example` to `.env` (PowerShell: `Copy-Item .env.example .env`; macOS/Linux: `cp .env.example .env`). You can also copy `server/.env.example` to `server/.env` to set backend-only local overrides; use one file or the other unless you intentionally need the server file to take precedence.
+
+### 3. Run the app
+
+From the project root:
 ```bash
 npm run dev
 ```
 
-- **Web Cockpit**: [http://localhost:5173](http://localhost:5173)
-- **API Server**: [http://localhost:5000](http://localhost:5000)
-- **Health Heartbeat**: [http://localhost:5000/api/health](http://localhost:5000/api/health)
-- **Readiness Probe**: [http://localhost:5000/api/health/ready](http://localhost:5000/api/health/ready)
-- **Prometheus Metrics**: [http://localhost:5000/metrics](http://localhost:5000/metrics)
+- **Web app**: [http://localhost:5173](http://localhost:5173)
+- **API health**: [http://localhost:5001/api/health](http://localhost:5001/api/health)
+
+Create an account in the web app, then open **Repositories** to connect GitHub or add a repository entry. Select a repository to explore it. Press `Ctrl+C` in the terminal to stop the app. Run `docker compose down` when you want to stop the database container.
+
+### Run the complete stack with Docker
+
+Copy `.env.example` to `.env`, generate unique values for both `JWT_SECRET` and `GITHUB_WEBHOOK_SECRET` using the command shown in the template, and paste them into those fields. Add `AI_API_KEY` only if you want AI-backed features. Then run:
+
+```bash
+docker compose up --build -d
+```
+
+Open [http://localhost](http://localhost) for the app and [http://localhost:5000/api/health](http://localhost:5000/api/health) for the API. Stop the containers with `docker compose down`; this preserves database volumes. Do not use `docker compose down -v` unless you intend to delete local database data.
 
 ---
 
 ## Environment Configuration Reference
 
-### Monorepo & Backend (`server/.env`)
+### Root (`.env`) and backend (`server/.env`) environment files
+
+The templates are [`.env.example`](.env.example) and [`server/.env.example`](server/.env.example). The backend reads `server/.env` first and then uses root `.env` values as defaults. Docker Compose reads the root file. Keep real credentials in `.env` files, which are ignored by Git.
 
 | Variable | Required | Default | Description |
 | :--- | :---: | :--- | :--- |
-| `NODE_ENV` | Yes | `development` | Set to `production` in production environments |
-| `PORT` | No | `5000` | Backend API port |
-| `CLIENT_URL` | Yes | `http://localhost:5173` | Public URL of client web application (used for CORS) |
-| `MONGODB_URI` | Yes | `mongodb://localhost:27017/devra` | MongoDB connection URI |
-| `JWT_SECRET` | Yes | — | Cryptographically random secret string (min 32 bytes) |
+| `NODE_ENV` | No | `development` | Set to `production` in production environments |
+| `PORT` | No | `5001` | Backend API port in local development (Docker uses `5000`) |
+| `CLIENT_URL` | No | `http://localhost:5173` | Public URL of client web application (used for CORS) |
+| `MONGODB_URI` | No | `mongodb://localhost:27017/devra` | MongoDB connection URI |
+| `JWT_SECRET` | Required for Docker | development fallback | Use a unique random secret of at least 32 bytes; Docker Compose refuses to start without it |
 | `JWT_EXPIRES_IN` | No | `7d` | Token expiration period |
 | `REDIS_HOST` | No | `localhost` | Redis server hostname (`redis` in Docker Compose) |
 | `REDIS_PORT` | No | `6379` | Redis server port |
@@ -202,11 +221,15 @@ npm run dev
 | `REDIS_TLS` | No | `false` | Set to `true` when connecting over public networks |
 | `VECTOR_STORE` | No | `redis` | Vector store backend: `redis` (production) or `memory` |
 | `VECTOR_DIMENSION`| No | `128` | Embedding vector dimensions |
-| `GITHUB_WEBHOOK_SECRET` | No | — | Secret for verifying GitHub PR webhook HMAC-SHA256 signatures |
+| `GITHUB_WEBHOOK_SECRET` | Required for Docker | development fallback | Unique secret for GitHub PR webhook signatures; Docker Compose refuses to start without it |
 | `METRICS_AUTH_TOKEN` | No | — | Optional Bearer token required to scrape `/metrics` |
 | `OTEL_ENABLED` | No | `false` | Enable OpenTelemetry distributed tracing |
 | `AI_PROVIDER` | No | `gemini` | AI Provider: `gemini` or `openai` |
-| `AI_API_KEY` | Yes | — | API key for Gemini or OpenAI |
+| `AI_API_KEY` | For AI features | — | API key for Gemini or OpenAI |
+| `GITHUB_CLIENT_ID` | For GitHub OAuth | — | GitHub OAuth application client ID |
+| `GITHUB_CLIENT_SECRET` | For GitHub OAuth | — | GitHub OAuth application secret |
+| `GITHUB_CALLBACK_URL` | For GitHub OAuth | `http://localhost:5001/api/auth/github/callback` | Must exactly match the callback URL configured in the GitHub OAuth App; use port `5000` with Docker Compose |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | Optional | — | SMTP settings for password reset emails |
 | `AI_MODEL` | No | `gemini-1.5-pro` | Model name: `gemini-1.5-pro` or `gpt-4o` |
 
 ---

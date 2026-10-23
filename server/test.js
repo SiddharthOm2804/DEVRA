@@ -10,6 +10,11 @@ import { runTreeSitterTests } from "./tests/treeSitter.test.js";
 import { runWebhookTests } from "./tests/webhook.test.js";
 import { runThreeJsLodTests } from "./tests/threeJsLod.test.js";
 import { runObservabilityTests } from "./tests/observability.test.js";
+import { runAuthWorkflowTests } from "./tests/authWorkflow.test.js";
+import { runMongoAuthIntegrationTests } from "./tests/mongoAuth.test.js";
+import { runSecurityRemediationTests } from "./tests/securityRemediation.test.js";
+import { runTruthfulnessTests } from "./tests/truthfulness.test.js";
+import { runProtocolSecurityTests } from "./tests/protocolSecurity.test.js";
 import { eventBus } from "./src/services/realtime/eventBus.js";
 
 async function runTests() {
@@ -160,6 +165,31 @@ async function runTests() {
   const obsResults = await runObservabilityTests();
   passed += obsResults.passed;
   failed += obsResults.failed;
+
+  // Run Authentication & Password Reset Workflow test suite
+  const authResults = await runAuthWorkflowTests();
+  passed += authResults.passed;
+  failed += authResults.failed;
+
+  // Run Real MongoDB Authentication Integration Suite
+  const mongoResults = await runMongoAuthIntegrationTests();
+  passed += mongoResults.passed;
+  failed += mongoResults.failed;
+
+  // Run Phase 1 Security Remediation Suite (F-003, F-004, F-013, F-014)
+  const securityResults = await runSecurityRemediationTests();
+  passed += securityResults.passed;
+  failed += securityResults.failed;
+
+  // Run Phase 2 Truthfulness & Mock Removal Suite (F-001, F-002, F-006, F-007)
+  const truthResults = await runTruthfulnessTests();
+  passed += truthResults.passed;
+  failed += truthResults.failed;
+
+  // Run Phase 3 Protocol & Client Security Suite (F-008, F-009, F-010)
+  const protocolResults = await runProtocolSecurityTests();
+  passed += protocolResults.passed;
+  failed += protocolResults.failed;
 
   await eventBus.close();
 

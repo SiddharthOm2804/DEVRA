@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 
 export default function Button({
   children,
@@ -8,9 +8,34 @@ export default function Button({
   disabled = false,
   isLoading = false,
   icon: Icon,
+  onClick,
   ...props
 }) {
-  const baseStyles = "inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#060911] disabled:opacity-50 disabled:cursor-not-allowed select-none";
+  const clickLock = useRef(false);
+  const [clickPending, setClickPending] = useState(false);
+  const baseStyles = "inline-flex items-center justify-center font-medium transition-colors duration-150 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-abyssal-jade disabled:opacity-50 disabled:cursor-not-allowed select-none";
+
+  const handleClick = async (event) => {
+    if (!onClick) return;
+    if (clickLock.current || disabled || isLoading) {
+      event.preventDefault();
+      return;
+    }
+
+    const result = onClick(event);
+    if (!result || typeof result.then !== "function") return;
+
+    clickLock.current = true;
+    setClickPending(true);
+    try {
+      await result;
+    } catch (error) {
+      console.error("Button action failed:", error);
+    } finally {
+      clickLock.current = false;
+      setClickPending(false);
+    }
+  };
 
   const sizeStyles = {
     xs: "text-xs px-2.5 py-1 gap-1.5",
@@ -20,17 +45,29 @@ export default function Button({
   };
 
   const variantStyles = {
-    primary: "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-semibold shadow-lg shadow-violet-900/30 border border-violet-400/30 focus:ring-violet-500 active:scale-[0.98]",
-    cyan: "bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white font-semibold shadow-lg shadow-cyan-900/30 border border-cyan-400/30 focus:ring-cyan-500 active:scale-[0.98]",
-    secondary: "bg-[#0E1528] hover:bg-[#16213D] text-slate-200 border border-slate-700/80 hover:border-violet-500/40 focus:ring-slate-500 active:scale-[0.98]",
-    outline: "bg-transparent hover:bg-violet-950/30 text-slate-300 hover:text-white border border-slate-700/80 hover:border-violet-500/50 focus:ring-violet-500",
-    ghost: "bg-transparent hover:bg-slate-800/60 text-slate-400 hover:text-violet-200 focus:ring-violet-500",
-    danger: "bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow-lg shadow-rose-950/40 border border-rose-400/30 focus:ring-rose-500 active:scale-[0.98]"
+    // Primary: Mineral Jade with dark contrast text
+    primary: "bg-abyssal-jade hover:bg-abyssal-jadeHover text-[#081817] font-bold shadow-jade-glow",
+    // Citron: Signature Citron accent
+    citron: "bg-abyssal-citron hover:bg-abyssal-citronHover text-[#081817] font-bold shadow-citron-glow",
+    blue: "bg-abyssal-citron hover:bg-abyssal-citronHover text-[#081817] font-bold shadow-citron-glow",
+    // Secondary: Elevated dark surface with jade border
+    secondary: "bg-abyssal-card hover:bg-abyssal-surface text-abyssal-ivory border border-abyssal-border hover:border-abyssal-jade/60 shadow-card-jade",
+    // Dark: Abyssal foundation
+    dark: "bg-abyssal-dark hover:bg-abyssal-card border border-abyssal-border text-abyssal-ivory",
+    // Outline: Transparent with jade border
+    outline: "bg-transparent hover:bg-abyssal-card/60 text-abyssal-ivory border border-abyssal-border hover:border-abyssal-jade focus:ring-abyssal-jade",
+    // Ghost: Clean transparent
+    ghost: "bg-transparent hover:bg-abyssal-surface/60 text-abyssal-secondary hover:text-abyssal-ivory focus:ring-abyssal-jade",
+    // Ghost Dark: For dark header/sidebar
+    ghostDark: "bg-transparent hover:bg-abyssal-card text-abyssal-secondary hover:text-abyssal-ivory focus:ring-abyssal-jade",
+    // Danger
+    danger: "bg-rose-600 hover:bg-rose-500 text-white font-semibold shadow-sm"
   };
 
   return (
     <button
-      disabled={disabled || isLoading}
+      disabled={disabled || isLoading || clickPending}
+      onClick={onClick ? handleClick : undefined}
       className={`${baseStyles} ${sizeStyles[size] || sizeStyles.md} ${variantStyles[variant] || variantStyles.primary} ${className}`}
       {...props}
     >

@@ -103,16 +103,103 @@ export const createRepository = async (req, res, next) => {
 };
 
 /**
+ * Explicit allowlist of user-updatable repository fields
+ */
+export const ALLOWED_REPO_UPDATE_FIELDS = new Set([
+  "name",
+  "description",
+  "visibility",
+  "isPrivate",
+  "activeBranch",
+  "defaultBranch",
+  "language",
+  "languageColor",
+  "isStarred"
+]);
+
+/**
+ * Protected repository fields that must never be altered via ordinary update
+ */
+export const PROTECTED_REPO_FIELDS = new Set([
+  "_id",
+  "userId",
+  "owner",
+  "githubId",
+  "createdAt",
+  "updatedAt",
+  "health",
+  "qualityGrade",
+  "securityStatus",
+  "lastScanned",
+  "commitCount",
+  "branchCount",
+  "filesCount",
+  "testCoverage",
+  "contributors"
+]);
+
+/**
  * @route   PUT /api/repositories/:id
  * @desc    Update repository metadata
  * @access  Private
  */
 export const updateRepository = async (req, res, next) => {
   try {
+    const rawUpdates = req.body || {};
+
+    // 1. Explicitly reject protected fields like userId, _id, ownership reassignments
+    const attemptedKeys = Object.keys(rawUpdates);
+    const forbiddenField = attemptedKeys.find((k) => PROTECTED_REPO_FIELDS.has(k));
+    if (forbiddenField) {
+      return res.status(400).json({
+        success: false,
+        message: `Field '${forbiddenField}' is protected and cannot be modified.`
+      });
+    }
+
+    // 2. Filter payload strictly against permitted allowlist
+    const sanitizedUpdates = {};
+    for (const key of attemptedKeys) {
+      if (ALLOWED_REPO_UPDATE_FIELDS.has(key)) {
+        sanitizedUpdates[key] = rawUpdates[key];
+      }
+    }
+
+    if (Object.keys(sanitizedUpdates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid updatable repository fields provided."
+      });
+    }
+
+    // Validate type and bounds for string fields
+    if (sanitizedUpdates.name !== undefined) {
+      if (typeof sanitizedUpdates.name !== "string" || sanitizedUpdates.name.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Repository name must be a non-empty string."
+        });
+      }
+      sanitizedUpdates.name = sanitizedUpdates.name.trim();
+    }
+
+    if (sanitizedUpdates.description !== undefined && typeof sanitizedUpdates.description !== "string") {
+      sanitizedUpdates.description = String(sanitizedUpdates.description || "");
+    }
+
+    if (sanitizedUpdates.visibility !== undefined) {
+      if (!["public", "private", "internal"].includes(sanitizedUpdates.visibility)) {
+        return res.status(400).json({
+          success: false,
+          message: "Visibility must be one of: public, private, internal."
+        });
+      }
+    }
+
     const updated = await repositoryService.updateRepository(
       req.user._id,
       req.params.id,
-      req.body
+      sanitizedUpdates
     );
 
     if (!updated) {
@@ -131,6 +218,7 @@ export const updateRepository = async (req, res, next) => {
     next(error);
   }
 };
+
 
 /**
  * @route   DELETE /api/repositories/:id
@@ -221,24 +309,65 @@ export const getAvailableGithubRepos = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).select("+githubAccessToken");
 
+    if (!user.isGithubConnected && !user.githubAccessToken && !user.githubUsername) {
+      return res.status(400).json({
+        success: false,
+        code: "GITHUB_NOT_CONNECTED",
+        message: "GitHub account is not connected. Connect your GitHub account to import repositories."
+      });
+    }
+
     let githubRepos = [];
 
     if (user.githubAccessToken && user.githubAccessToken.startsWith("gh")) {
       try {
         githubRepos = await githubService.getUserRepositories(user.githubAccessToken);
       } catch (ghErr) {
-        console.warn("[GitHub API] Live token fetch failed, falling back to simulated repos:", ghErr.message);
-        githubRepos = githubService.getSimulatedRepositories(user.githubUsername || user.name);
+        const statusCode = ghErr.response?.status;
+        if (statusCode === 401 || statusCode === 403) {
+          return res.status(401).json({
+            success: false,
+            code: "GITHUB_TOKEN_EXPIRED",
+            message: "GitHub authorization has expired or was revoked. Please reconnect your GitHub account."
+          });
+        }
+        if (statusCode === 429) {
+          return res.status(429).json({
+            success: false,
+            code: "GITHUB_RATE_LIMITED",
+            message: "GitHub API rate limit exceeded. Please try again later."
+          });
+        }
+        return res.status(502).json({
+          success: false,
+          code: "GITHUB_UNAVAILABLE",
+          message: "GitHub service is temporarily unavailable. Could not fetch repositories."
+        });
       }
     } else if (user.githubUsername) {
       try {
         githubRepos = await githubService.getPublicUserRepositories(user.githubUsername);
       } catch (pubErr) {
-        githubRepos = githubService.getSimulatedRepositories(user.githubUsername);
+        const statusCode = pubErr.response?.status;
+        if (statusCode === 404) {
+          return res.status(404).json({
+            success: false,
+            code: "GITHUB_USER_NOT_FOUND",
+            message: `GitHub user '${user.githubUsername}' not found.`
+          });
+        }
+        return res.status(502).json({
+          success: false,
+          code: "GITHUB_UNAVAILABLE",
+          message: "GitHub service is temporarily unavailable. Could not fetch public repositories."
+        });
       }
     } else {
-      // Return simulated sample GitHub repositories for instant developer testing
-      githubRepos = githubService.getSimulatedRepositories(user.name.toLowerCase().replace(/\s+/g, "-"));
+      return res.status(400).json({
+        success: false,
+        code: "GITHUB_NOT_CONNECTED",
+        message: "No connected GitHub account or username found."
+      });
     }
 
     // Check which repos are already imported in MongoDB for this user
@@ -250,6 +379,7 @@ export const getAvailableGithubRepos = async (req, res, next) => {
       ...repo,
       isImported: savedIds.has(repo.githubId) || savedNames.has(repo.name.toLowerCase())
     }));
+
 
     res.status(200).json({
       success: true,
@@ -315,13 +445,16 @@ export const connectGithubRepo = async (req, res, next) => {
       repo.isPrivate = isPrivate !== undefined ? isPrivate : repo.isPrivate;
       repo.visibility = isPrivate ? "private" : "public";
       repo.description = description || repo.description;
+      // GitHub imports must never inherit demo file-tree defaults from older records.
+      repo.fileTree = [];
+      repo.filesCount = 0;
       repo.lastUpdated = lastUpdated ? new Date(lastUpdated) : new Date();
       await repo.save();
     } else {
       // Create new repository record in MongoDB
       repo = await Repository.create({
         userId: req.user._id,
-        githubId: githubId || Math.floor(Math.random() * 9000000) + 1000000,
+        githubId: githubId || null,
         name: name.trim(),
         fullName: fullName || `${owner?.login || req.user.name}/${name.trim()}`,
         owner: owner || {
@@ -339,8 +472,10 @@ export const connectGithubRepo = async (req, res, next) => {
         isPrivate: !!isPrivate,
         visibility: isPrivate ? "private" : "public",
         description: description || "",
+        fileTree: [],
+        filesCount: 0,
         lastUpdated: lastUpdated ? new Date(lastUpdated) : new Date(),
-        health: Math.floor(Math.random() * 10) + 90,
+        health: 100,
         qualityGrade: "A+",
         securityStatus: "Secure"
       });

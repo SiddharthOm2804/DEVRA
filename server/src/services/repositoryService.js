@@ -1,5 +1,8 @@
 import Repository from "../models/Repository.js";
+import User from "../models/User.js";
+import Analysis from "../models/Analysis.js";
 import { deleteRepositoryVectors } from "./retriever.js";
+import * as githubService from "./githubService.js";
 
 /**
  * Curated seed repositories to provide new users an immediate, rich developer dashboard.
@@ -167,14 +170,10 @@ export const getUserRepositories = async (userId, options = {}) => {
     query.language = { $regex: new RegExp(`^${language}$`, "i") };
   }
 
-  // Check if user has zero repos; if so, automatically seed
-  const count = await Repository.countDocuments({ userId });
-  if (count === 0) {
-    await seedUserRepositories(userId);
-  }
-
+  // Fetch user repositories; genuine empty state returned when count is 0
   return await Repository.find(query).sort(sort);
 };
+
 
 /**
  * Get a single repository by ID or name
@@ -226,13 +225,22 @@ export const createRepository = async (userId, repoData) => {
  * Update an existing repository
  */
 export const updateRepository = async (userId, id, updateData) => {
+  const safeUpdates = { ...(updateData || {}) };
+  delete safeUpdates.userId;
+  delete safeUpdates._id;
+  delete safeUpdates.owner;
+  delete safeUpdates.githubId;
+  delete safeUpdates.createdAt;
+  delete safeUpdates.updatedAt;
+
   const repo = await Repository.findOneAndUpdate(
     { _id: id, userId },
-    { $set: updateData },
+    { $set: safeUpdates },
     { new: true, runValidators: true }
   );
   return repo;
 };
+
 /**
  * Delete a repository and its persistent vector store embeddings
  */
@@ -249,17 +257,32 @@ export const deleteRepository = async (userId, id) => {
 };
 
 /**
- * Simulate scanning / syncing repository metrics
+ * Scan and sync repository metrics using truthful data sources (real AST analysis or GitHub API)
+ * F-010: Eliminates Math.random() and synthetic metric jitter.
  */
 export const syncRepository = async (userId, id) => {
   const repo = await Repository.findOne({ _id: id, userId });
   if (!repo) return null;
 
-  // Simulate updated commit & scan activity
-  repo.commitCount += Math.floor(Math.random() * 3) + 1;
-  repo.lastScanned = new Date();
-  repo.health = Math.min(100, Math.max(70, repo.health + (Math.floor(Math.random() * 5) - 2)));
-  await repo.save();
+  // 1. Check for real analysis data to compute verified code metrics
+  const latestAnalysis = await Analysis.findOne({ repositoryId: id, userId }).sort({ createdAt: -1 });
 
+  if (latestAnalysis) {
+    if (Number.isFinite(latestAnalysis.totalFiles) && latestAnalysis.totalFiles > 0) {
+      repo.filesCount = latestAnalysis.totalFiles;
+    }
+    // Update primary language from verified analysis if available
+    if (latestAnalysis.summary?.primaryLanguage) {
+      repo.language = latestAnalysis.summary.primaryLanguage;
+    }
+  } else if (Array.isArray(repo.fileTree) && repo.fileTree.length > 0) {
+    repo.filesCount = repo.fileTree.length;
+  }
+
+  // 2. Truthfully record the scan timestamp without fabricating random jitter
+  repo.lastScanned = new Date();
+  repo.lastUpdated = new Date();
+
+  await repo.save();
   return repo;
 };

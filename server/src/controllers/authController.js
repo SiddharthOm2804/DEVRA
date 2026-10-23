@@ -3,10 +3,55 @@ import User from "../models/User.js";
 import { generateToken } from "../utils/jwt.js";
 import { config } from "../config/env.js";
 import * as githubService from "../services/githubService.js";
+import { emailService } from "../services/emailService.js";
+import { ticketStore } from "../utils/ticketStore.js";
+
+const encodeGithubOAuthState = (payload) => {
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = crypto.createHmac("sha256", config.jwt.secret).update(encodedPayload).digest("base64url");
+  return `${encodedPayload}.${signature}`;
+};
+
+const decodeGithubOAuthState = (state) => {
+  if (typeof state !== "string") return null;
+  const [encodedPayload, signature, ...extra] = state.split(".");
+  if (!encodedPayload || !signature || extra.length) return null;
+
+  const expected = crypto.createHmac("sha256", config.jwt.secret).update(encodedPayload).digest();
+  let actual;
+  try {
+    actual = Buffer.from(signature, "base64url");
+  } catch {
+    return null;
+  }
+  if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+    if (!payload || !["login", "connect"].includes(payload.mode)) return null;
+    if (!Number.isFinite(payload.issuedAt) || Date.now() - payload.issuedAt > 10 * 60 * 1000) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+};
+
+const safeGithubRedirect = (redirect, fallback) =>
+  typeof redirect === "string" && redirect.startsWith("/") && !redirect.startsWith("//") && !redirect.includes("\\")
+    ? redirect
+    : fallback;
+
+const createGithubOAuthState = ({ mode, redirect, userId }) => encodeGithubOAuthState({
+  mode: mode === "connect" ? "connect" : "login",
+  redirect: safeGithubRedirect(redirect, mode === "connect" ? "/repositories" : "/dashboard"),
+  userId: userId || null,
+  issuedAt: Date.now(),
+  nonce: crypto.randomBytes(16).toString("hex")
+});
 
 /**
  * @route   POST /api/auth/register
- * @desc    Register a new user account
+ * @desc    Create an account and sign the user in
  * @access  Public
  */
 export const register = async (req, res, next) => {
@@ -14,7 +59,7 @@ export const register = async (req, res, next) => {
     const { name, email, password, organization } = req.body;
 
     // 1. Validation: Required fields
-    if (!name || !email || !password) {
+    if (typeof name !== "string" || !name.trim() || typeof email !== "string" || !email.trim() || typeof password !== "string") {
       return res.status(400).json({
         success: false,
         message: "Please provide name, email, and password."
@@ -22,7 +67,7 @@ export const register = async (req, res, next) => {
     }
 
     // 2. Validation: Email format
-    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
@@ -31,15 +76,16 @@ export const register = async (req, res, next) => {
     }
 
     // 3. Validation: Password strength
-    if (password.length < 6) {
+    if (password.length < 6 || password.length > 128) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 6 characters long."
+        message: "Password must be between 6 and 128 characters long."
       });
     }
 
     // 4. Check for existing user
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -47,28 +93,29 @@ export const register = async (req, res, next) => {
       });
     }
 
-    // 5. Create user (password will be hashed by pre-save hook)
     const user = await User.create({
       name: name.trim(),
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       password,
-      organization: organization ? organization.trim() : "Devra Engineering"
+      organization: typeof organization === "string" && organization.trim()
+        ? organization.trim()
+        : "Devra Engineering"
     });
 
-    // 6. Generate JWT token
-    const token = generateToken({
-      id: user._id,
-      email: user.email,
-      role: user.role
-    });
-
-    res.status(201).json({
+    const token = generateToken({ id: user._id, email: user.email, role: user.role });
+    return res.status(201).json({
       success: true,
-      message: "Account registered successfully.",
+      message: "Your account has been created successfully.",
       token,
       user
     });
   } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "An account with this email address already exists."
+      });
+    }
     next(error);
   }
 };
@@ -94,9 +141,10 @@ export const login = async (req, res, next) => {
     const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
 
     if (!user) {
-      return res.status(401).json({
+      return res.status(404).json({
         success: false,
-        message: "Invalid email or password."
+        code: "ACCOUNT_NOT_FOUND",
+        message: "No account exists for this email address. Taking you to registration."
       });
     }
 
@@ -163,9 +211,9 @@ export const logout = async (req, res, next) => {
 export const getGithubAuthUrl = async (req, res, next) => {
   try {
     const { mode = "login", redirect } = req.query;
-    const clientId = config.github.clientId;
+    const { clientId, clientSecret } = config.github;
 
-    if (!clientId) {
+    if (!clientId || !clientSecret) {
       return res.status(200).json({
         success: true,
         configured: false,
@@ -174,13 +222,7 @@ export const getGithubAuthUrl = async (req, res, next) => {
       });
     }
 
-    const statePayload = {
-      mode,
-      redirect: redirect || (mode === "connect" ? "/repositories" : "/dashboard"),
-      userId: req.user ? req.user._id : null,
-      nonce: crypto.randomBytes(8).toString("hex")
-    };
-    const state = Buffer.from(JSON.stringify(statePayload)).toString("base64url");
+    const state = createGithubOAuthState({ mode, redirect, userId: req.user?._id });
     const url = githubService.getOAuthAuthorizeUrl(state);
 
     return res.status(200).json({
@@ -201,20 +243,14 @@ export const getGithubAuthUrl = async (req, res, next) => {
 export const initiateGithubAuth = async (req, res, next) => {
   try {
     const { mode = "login", redirect, userId } = req.query;
-    const clientId = config.github.clientId;
+    const { clientId, clientSecret } = config.github;
     const returnBase = mode === "connect" ? "/repositories" : "/login";
 
-    if (!clientId) {
+    if (!clientId || !clientSecret) {
       return res.redirect(`${config.clientUrl}${returnBase}?github_error=not_configured`);
     }
 
-    const statePayload = {
-      mode,
-      redirect: redirect || (mode === "connect" ? "/repositories" : "/dashboard"),
-      userId: userId || null,
-      nonce: crypto.randomBytes(8).toString("hex")
-    };
-    const state = Buffer.from(JSON.stringify(statePayload)).toString("base64url");
+    const state = createGithubOAuthState({ mode, redirect, userId });
     const url = githubService.getOAuthAuthorizeUrl(state);
 
     return res.redirect(url);
@@ -232,13 +268,9 @@ export const handleGithubCallback = async (req, res, next) => {
   try {
     const { code, state, error: ghError, error_description } = req.query;
 
-    let parsedState = { mode: "login", redirect: "/dashboard", userId: null };
-    if (state) {
-      try {
-        parsedState = JSON.parse(Buffer.from(state, "base64url").toString("utf-8"));
-      } catch (e) {
-        // Fallback to default
-      }
+    const parsedState = decodeGithubOAuthState(state);
+    if (!parsedState) {
+      return res.redirect(`${config.clientUrl}/login?github_error=invalid_state`);
     }
 
     const returnBase = parsedState.mode === "connect" ? "/repositories" : "/login";
@@ -344,7 +376,11 @@ export const handleGithubCallback = async (req, res, next) => {
       role: user.role
     });
 
-    return res.redirect(`${config.clientUrl}/login?oauth_token=${token}&redirect=${encodeURIComponent(targetRedirect)}`);
+    // F-009: Instead of leaking long-lived reusable bearer token in URL query parameter,
+    // issue a short-lived (60s) single-use exchange ticket
+    const ticket = ticketStore.createTicket({ token, userId: user._id.toString() }, 60 * 1000);
+
+    return res.redirect(`${config.clientUrl}/login?ticket=${ticket}&redirect=${encodeURIComponent(targetRedirect)}`);
   } catch (error) {
     console.error("[GitHub OAuth Callback Error]:", error);
     return res.redirect(`${config.clientUrl}/login?github_error=unexpected`);
@@ -412,6 +448,231 @@ export const updateUserRole = async (req, res, next) => {
       success: true,
       message: `User ${targetUser.email} role updated to ${role}.`,
       user: targetUser
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Generate password reset token and send instructions
+ * @access  Public
+ */
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide an email address."
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid email address."
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    // Prevent user enumeration: always return standard success message
+    const genericResponse = {
+      success: true,
+      message: "If an account with that email exists, password reset instructions have been sent."
+    };
+
+    if (!user) {
+      return res.status(200).json(genericResponse);
+    }
+
+    // Generate random 32-byte reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    // Hash token using SHA-256 and save to database
+    user.resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    // Token expires in 15 minutes
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    // Construct reset URL for client
+    const resetUrl = `${config.clientUrl}/reset-password/${resetToken}`;
+
+    try {
+      await emailService.sendPasswordReset({
+        to: user.email,
+        resetUrl,
+        name: user.name
+      });
+
+      return res.status(200).json(genericResponse);
+    } catch (err) {
+      // Invalidate token if email dispatch encounters an unexpected error
+      user.resetPasswordToken = null;
+      user.resetPasswordExpire = null;
+      await user.save({ validateBeforeSave: false });
+
+      console.error("[ForgotPassword Error]:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Could not send password reset email at this time. Please try again later."
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   POST /api/auth/reset-password/:token
+ * @desc    Verify reset token & update user password
+ * @access  Public
+ */
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Reset token is required."
+      });
+    }
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters long."
+      });
+    }
+
+    // Hash provided raw token to compare against stored hash
+    const resetPasswordToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    const user = await User.findOne({
+      resetPasswordToken,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Password reset token is invalid or has expired."
+      });
+    }
+
+    // Set new password (pre-save hook hashes with bcrypt)
+    user.password = password;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpire = null;
+    await user.save();
+
+    // Issue refreshed JWT token so user is safely authenticated
+    const authToken = generateToken({
+      id: user._id,
+      email: user.email,
+      role: user.role
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successful. You are now logged in.",
+      token: authToken,
+      user
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   POST /api/auth/exchange-ticket
+ * @desc    Exchange a short-lived single-use ticket for the actual JWT token
+ * @access  Public
+ */
+export const exchangeTicket = async (req, res, next) => {
+  try {
+    const { ticket } = req.body;
+    if (!ticket) {
+      return res.status(400).json({
+        success: false,
+        message: "Exchange ticket is required."
+      });
+    }
+
+    const payload = ticketStore.consumeTicket(ticket);
+    if (!payload || !payload.token) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid, expired, or already-used exchange ticket."
+      });
+    }
+
+    // Verify token remains valid
+    let decoded;
+    try {
+      decoded = verifyToken(payload.token);
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: "The session associated with this ticket has expired or is invalid."
+      });
+    }
+
+    const user = await User.findById(decoded.id).select("-password");
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User associated with this ticket no longer exists."
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      token: payload.token,
+      user
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   POST /api/auth/stream-ticket
+ * @desc    Issue a short-lived single-use ticket for opening an EventSource / SSE connection
+ * @access  Private
+ */
+export const createStreamTicket = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({
+        success: false,
+        message: "Authorization header with Bearer token is required."
+      });
+    }
+    const token = authHeader.split(" ")[1];
+
+    // Single-use stream ticket valid for 60 seconds
+    const ticket = ticketStore.createTicket({ token, userId: req.user._id.toString() }, 60 * 1000);
+
+    return res.status(200).json({
+      success: true,
+      ticket,
+      expiresIn: 60
     });
   } catch (error) {
     next(error);

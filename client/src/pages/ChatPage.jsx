@@ -303,9 +303,9 @@ Try one of the quick suggestions below or type your inquiry.`,
   };
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] flex flex-col md:flex-row overflow-hidden bg-[#080B11]">
+    <div className="min-h-[calc(100dvh-3.5rem)] flex flex-col md:h-[calc(100dvh-3.5rem)] md:min-h-0 md:flex-row overflow-hidden bg-brand-light">
       {/* LEFT SIDEBAR: Codebase Workspaces & RAG Telemetry */}
-      <aside className="w-full md:w-72 bg-[#090D15] border-r border-slate-800/80 p-4 flex flex-col justify-between shrink-0">
+      <aside className="w-full max-h-[38dvh] overflow-y-auto md:max-h-none md:overflow-visible md:w-72 bg-white border-r border-slate-200 p-3 sm:p-4 flex flex-col justify-between shrink-0 shadow-card-sm">
         <div className="space-y-5">
           {/* Active Workspace Header */}
           <div className="space-y-2">
@@ -319,7 +319,7 @@ Try one of the quick suggestions below or type your inquiry.`,
                   const r = repositories.find((x) => x._id === e.target.value);
                   if (r) handleSelectRepository(r);
                 }}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-white focus:outline-none focus:border-sky-500 appearance-none pr-8 cursor-pointer"
+                className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:border-brand-lavender appearance-none pr-8 cursor-pointer"
               >
                 {repositories.map((r) => (
                   <option key={r._id} value={r._id}>
@@ -332,30 +332,30 @@ Try one of the quick suggestions below or type your inquiry.`,
           </div>
 
           {/* RAG Telemetry Card */}
-          <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-2.5 font-mono text-xs">
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5 font-mono text-xs">
             <div className="flex items-center justify-between text-[11px]">
-              <span className="text-slate-400 flex items-center gap-1.5">
-                <Cpu className="w-3.5 h-3.5 text-sky-400" />
+              <span className="text-slate-600 flex items-center gap-1.5">
+                <Cpu className="w-3.5 h-3.5 text-brand-lavender" />
                 <span>RAG Retrieval</span>
               </span>
-              <span className="flex items-center gap-1 text-emerald-400 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="flex items-center gap-1 text-emerald-600 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 Ready
               </span>
             </div>
 
-            <div className="divide-y divide-slate-800/60 text-[10px] text-slate-400">
+            <div className="divide-y divide-slate-200/80 text-[10px] text-slate-500">
               <div className="py-1.5 flex items-center justify-between">
                 <span>Vector Dimension:</span>
-                <span className="text-slate-200">128-d L2</span>
+                <span className="text-slate-800 font-medium">128-d L2</span>
               </div>
               <div className="py-1.5 flex items-center justify-between">
                 <span>Retrieval Mode:</span>
-                <span className="text-sky-300">Semantic Cosine</span>
+                <span className="text-brand-lavender font-medium">Semantic Cosine</span>
               </div>
               <div className="py-1.5 flex items-center justify-between">
                 <span>Context Filter:</span>
-                <span className="text-slate-200">Top-4 Chunks</span>
+                <span className="text-slate-800 font-medium">Top-4 Chunks</span>
               </div>
             </div>
           </div>
@@ -370,7 +370,7 @@ Try one of the quick suggestions below or type your inquiry.`,
                 <button
                   key={idx}
                   onClick={() => handleSend(prompt)}
-                  className="w-full text-left p-2.5 rounded-lg bg-slate-900/40 hover:bg-slate-800/80 border border-slate-800/60 text-[11px] text-slate-300 hover:text-white transition-colors truncate block"
+                  className="w-full text-left p-2.5 rounded-lg bg-slate-50 hover:bg-white hover:border-brand-lavender border border-slate-200 text-[11px] text-slate-700 hover:text-slate-900 transition-colors truncate block"
                 >
                   &rarr; {prompt}
                 </button>
@@ -380,7 +380,7 @@ Try one of the quick suggestions below or type your inquiry.`,
         </div>
 
         {/* Sidebar Footer */}
-        <div className="pt-4 border-t border-slate-800/80 space-y-2">
+        <div className="pt-4 border-t border-slate-200 space-y-2">
           <Button
             onClick={handleClearHistory}
             variant="outline"
@@ -397,22 +397,22 @@ Try one of the quick suggestions below or type your inquiry.`,
       </aside>
 
       {/* MAIN CHAT WORKSPACE */}
-      <main className="flex-1 flex flex-col justify-between overflow-hidden bg-[#060911]">
+      <main className="flex-1 min-h-[55dvh] min-w-0 flex flex-col justify-between overflow-hidden bg-brand-light md:min-h-0">
         {/* Workspace Top Header */}
-        <div className="h-14 border-b border-white/10 px-6 flex items-center justify-between bg-[#0A0E1A] shrink-0">
+        <div className="min-h-14 border-b border-slate-200 px-3 sm:px-6 py-2 flex items-center justify-between gap-3 bg-white shrink-0 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-violet-950/50 border border-violet-500/30 flex items-center justify-center text-violet-400">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-lavender">
               <Bot className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xs font-bold text-white font-mono tracking-wide">
+                <h2 className="text-xs font-bold text-slate-900 font-mono tracking-wide line-clamp-2">
                   Autonomous Codebase Spatial Chat
                 </h2>
-                <Badge variant="violet" size="sm">Persistent Vector RAG</Badge>
+                <Badge variant="lavender" size="sm">Persistent Vector RAG</Badge>
               </div>
-              <p className="text-[10px] font-mono text-slate-400">
-                Scope: <span className="text-violet-300 font-semibold">{selectedRepo?.name}</span> &bull; AST Grounded Citations
+              <p className="text-[10px] font-mono text-slate-500">
+                Scope: <span className="text-brand-lavender font-semibold">{selectedRepo?.name}</span> &bull; AST Grounded Citations
               </p>
             </div>
           </div>
@@ -420,7 +420,7 @@ Try one of the quick suggestions below or type your inquiry.`,
           <div className="flex items-center gap-3">
             <button
               onClick={handleClearHistory}
-              className="p-2 rounded-lg bg-[#0E1526] border border-white/10 text-slate-400 hover:text-rose-400 transition-colors"
+              className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
               title="Clear Thread"
             >
               <Trash2 className="w-4 h-4" />
@@ -429,14 +429,14 @@ Try one of the quick suggestions below or type your inquiry.`,
         </div>
 
         {/* Messages Stream Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 space-y-6">
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs font-mono text-rose-400 flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-mono text-rose-600 flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
                 {error}
               </span>
-              <button onClick={() => setError(null)} className="text-slate-400 hover:text-white">✕</button>
+              <button onClick={() => setError(null)} className="text-slate-400 hover:text-slate-700">✕</button>
             </div>
           )}
 
@@ -453,11 +453,11 @@ Try one of the quick suggestions below or type your inquiry.`,
                 <div
                   className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold ${
                     isUser
-                      ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-mono shadow-md shadow-violet-950/40"
-                      : "bg-[#0E1526] border border-violet-500/30 text-violet-300 shadow-sm"
+                      ? "bg-brand-lavender text-white font-mono shadow-md"
+                      : "bg-white border border-slate-200 text-slate-700 shadow-sm"
                   }`}
                 >
-                  {isUser ? "You" : <Cpu className="w-4 h-4 text-cyan-400" />}
+                  {isUser ? "You" : <Cpu className="w-4 h-4 text-brand-lavender" />}
                 </div>
 
                 {/* Message Bubble Container */}
@@ -465,8 +465,8 @@ Try one of the quick suggestions below or type your inquiry.`,
                   <div
                     className={`p-5 rounded-2xl text-xs leading-relaxed ${
                       isUser
-                        ? "bg-gradient-to-r from-violet-700 to-indigo-700 text-white font-mono shadow-lg shadow-violet-950/30 border border-violet-400/20"
-                        : "bg-[#0A0E1A] border border-white/10 text-slate-200 shadow-2xl"
+                        ? "bg-brand-lavender text-white font-mono shadow-md"
+                        : "bg-white border border-slate-200 text-slate-800 shadow-card-sm"
                     }`}
                   >
                     {isUser ? (
@@ -533,7 +533,7 @@ Try one of the quick suggestions below or type your inquiry.`,
         </div>
 
         {/* BOTTOM INPUT DOCK & PROMPT PILLS */}
-        <div className="p-4 border-t border-slate-800 bg-[#0B0F17] space-y-3 shrink-0">
+        <div className="p-3 sm:p-4 border-t border-slate-200 bg-white space-y-3 shrink-0 shadow-card-sm">
           {/* Quick Prompts Row */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
             <span className="text-[10px] font-mono text-slate-500 uppercase shrink-0">
@@ -544,7 +544,7 @@ Try one of the quick suggestions below or type your inquiry.`,
                 key={i}
                 onClick={() => handleSend(prompt)}
                 disabled={isTyping}
-                className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white whitespace-nowrap text-[11px] font-mono transition-colors disabled:opacity-50"
+                className="px-2.5 py-1 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 whitespace-nowrap text-[11px] font-mono transition-colors disabled:opacity-50"
               >
                 {prompt}
               </button>
@@ -572,7 +572,7 @@ Try one of the quick suggestions below or type your inquiry.`,
                   }
                 }}
                 placeholder={`Ask anything about ${selectedRepo?.name || "the codebase"}... (Press Enter to send, Shift+Enter for new line)`}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#080B11] border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 font-mono resize-none leading-relaxed"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-lavender focus:bg-white font-mono resize-none leading-relaxed transition-colors"
               />
             </div>
 
@@ -589,8 +589,8 @@ Try one of the quick suggestions below or type your inquiry.`,
           </form>
 
           <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 px-1">
-            <span>Devra RAG &bull; Never sends full repository blindly &bull; Grounded in verified source chunks</span>
-            <span>Enter to Send</span>
+            <span className="truncate">Devra RAG &bull; Verified AST source chunks</span>
+            <span className="shrink-0">Enter to Send</span>
           </div>
         </div>
       </main>

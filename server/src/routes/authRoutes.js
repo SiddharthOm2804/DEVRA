@@ -8,15 +8,25 @@ import {
   initiateGithubAuth,
   handleGithubCallback,
   getUsers,
-  updateUserRole
+  updateUserRole,
+  forgotPassword,
+  resetPassword,
+  exchangeTicket,
+  createStreamTicket
 } from "../controllers/authController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { requireTeamRole } from "../middleware/rbacMiddleware.js";
+import { authLimiter } from "../middleware/rateLimiter.js";
+import { requireDB } from "../middleware/dbCheckMiddleware.js";
 
 const router = express.Router();
 
-router.post("/register", register);
-router.post("/login", login);
+router.post("/register", authLimiter, requireDB, register);
+router.post("/login", authLimiter, requireDB, login);
+router.post("/forgot-password", authLimiter, requireDB, forgotPassword);
+router.post("/reset-password/:token", authLimiter, requireDB, resetPassword);
+router.post("/exchange-ticket", authLimiter, exchangeTicket);
+router.post("/stream-ticket", protect, createStreamTicket);
 router.get("/me", protect, getMe);
 router.post("/logout", logout);
 

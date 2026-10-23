@@ -9,14 +9,16 @@ import logger from "../utils/logger.js";
 export const connectDB = async () => {
   try {
     const conn = await mongoose.connect(config.mongodb.uri, {
-      serverSelectionTimeoutMS: 3000
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 10000
     });
-    logger.info(`[MongoDB] Database connected successfully: ${conn.connection.host}`);
+    logger.info(`[MongoDB] Database connected successfully (host: ${conn.connection.host}, db: ${conn.connection.name})`);
     return conn;
   } catch (error) {
-    logger.warn(`[MongoDB] Notice: Could not connect to MongoDB at ${config.mongodb.uri}`);
-    logger.warn(`[MongoDB] Details: ${error.message}`);
-    logger.warn("[MongoDB] Server running in foundation/standalone mode (DB dependent features will be unavailable).");
+    logger.warn(`[MongoDB] Notice: Could not connect to MongoDB database.`);
+    logger.warn(`[MongoDB] Diagnostic: ${error.message}`);
+    logger.warn("[MongoDB] If running locally, verify MongoDB service is running (e.g. net start MongoDB, mongod, or docker run -d -p 27017:27017 mongo).");
+    logger.warn("[MongoDB] Authentication and data-persistence features will return 503 until database is available.");
     return null;
   }
 };

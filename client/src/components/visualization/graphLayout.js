@@ -202,29 +202,11 @@ export function classifyGroup(filePath = "", fileName = "", ext = "") {
  * Derives complexity and issue count based on lines, entry point, and structure
  */
 export function deriveComplexity(file, isEntryPoint) {
-  const lines = file.lines || 120;
-  let baseScore = Math.min(Math.round(lines / 6), 70);
-  if (isEntryPoint) baseScore += 25;
-  if (file.size > 15000) baseScore += 10;
-  const score = Math.min(Math.max(baseScore, 15), 98);
-
-  let label = "Low";
-  if (score >= 80) label = "Critical";
-  else if (score >= 60) label = "High";
-  else if (score >= 35) label = "Medium";
-
-  const issues = [];
-  if (score > 85) issues.push("High cyclomatic complexity (> 15)");
-  if (lines > 450) issues.push("Exceeds 450 lines (consider refactoring)");
-  if (isEntryPoint) issues.push("Central architectural entry point");
-  if (file.name && file.name.includes("Controller") && lines > 200) issues.push("Fat controller: extract domain services");
-  if (score > 60 && issues.length === 0) issues.push("Strict parameter type validation recommended");
-
   return {
-    score,
-    label,
-    issueCount: issues.length,
-    issues
+    score: null,
+    label: "Not analyzed",
+    issueCount: 0,
+    issues: []
   };
 }
 
@@ -277,36 +259,7 @@ export function buildGraphLayout(analysis, repo, options = {}) {
     Utilities: []
   };
 
-  if (rawFiles.length === 0) {
-    // Representative default structure for initial empty state
-    groupedFiles.Frontend.push(
-      { path: "client/src/App.tsx", name: "App.tsx", extension: "tsx", lines: 280, isEntryPoint: true },
-      { path: "client/src/components/Dashboard.tsx", name: "Dashboard.tsx", extension: "tsx", lines: 340 },
-      { path: "client/src/components/ThreeCanvas.tsx", name: "ThreeCanvas.tsx", extension: "tsx", lines: 190 },
-      { path: "client/src/hooks/useAuth.ts", name: "useAuth.ts", extension: "ts", lines: 110 }
-    );
-    groupedFiles.Backend.push(
-      { path: "server/src/server.ts", name: "server.ts", extension: "ts", lines: 180, isEntryPoint: true },
-      { path: "server/src/routes/apiRoutes.ts", name: "apiRoutes.ts", extension: "ts", lines: 140 },
-      { path: "server/src/controllers/authController.ts", name: "authController.ts", extension: "ts", lines: 290 },
-      { path: "server/src/middleware/auth.ts", name: "auth.ts", extension: "ts", lines: 95 }
-    );
-    groupedFiles.Services.push(
-      { path: "server/src/services/codeAnalysisService.ts", name: "codeAnalysisService.ts", extension: "ts", lines: 420 },
-      { path: "server/src/services/githubService.ts", name: "githubService.ts", extension: "ts", lines: 240 },
-      { path: "server/src/services/cacheWorker.ts", name: "cacheWorker.ts", extension: "ts", lines: 160 }
-    );
-    groupedFiles.Database.push(
-      { path: "server/src/models/User.ts", name: "User.ts", extension: "ts", lines: 180 },
-      { path: "server/src/models/Repository.ts", name: "Repository.ts", extension: "ts", lines: 220 },
-      { path: "server/src/models/Analysis.ts", name: "Analysis.ts", extension: "ts", lines: 260 }
-    );
-    groupedFiles.Utilities.push(
-      { path: "server/src/config/env.ts", name: "env.ts", extension: "ts", lines: 65 },
-      { path: "server/src/utils/logger.ts", name: "logger.ts", extension: "ts", lines: 85 },
-      { path: "client/src/utils/formatters.ts", name: "formatters.ts", extension: "ts", lines: 90 }
-    );
-  } else {
+  if (rawFiles.length > 0) {
     // Populate grouped files from parsed sources, capping up to maxNodes
     const count = Math.min(rawFiles.length, maxNodes);
     for (let i = 0; i < count; i++) {
@@ -319,18 +272,6 @@ export function buildGraphLayout(analysis, repo, options = {}) {
       });
     }
 
-    // Balance clusters if any group has 0 files
-    Object.keys(GROUP_CONFIG).forEach((grp) => {
-      if (groupedFiles[grp].length === 0) {
-        groupedFiles[grp].push({
-          path: `${grp.toLowerCase()}/coreModule.ts`,
-          name: `${grp.toLowerCase()}Module.ts`,
-          extension: "ts",
-          lines: 150,
-          isEntryPoint: false
-        });
-      }
-    });
   }
 
   const nodes = [];
@@ -341,6 +282,7 @@ export function buildGraphLayout(analysis, repo, options = {}) {
   Object.keys(GROUP_CONFIG).forEach((groupName) => {
     const config = GROUP_CONFIG[groupName];
     const files = groupedFiles[groupName];
+    if (files.length === 0) return;
     const center = config.center;
     const totalGroupFiles = files.length;
 
@@ -371,22 +313,14 @@ export function buildGraphLayout(analysis, repo, options = {}) {
       isHub: true,
       lodLevel: LOD_LEVELS.OVERVIEW,
       lines: totalLines,
-      complexity: {
-        score: Math.min(96, Math.max(75, Math.round(totalLines / 80))),
-        label: totalLines > 3000 ? "Critical" : "High",
-        issueCount: Math.min(8, Math.round(totalGroupFiles / 10)),
-        issues: [`Aggregated ${totalGroupFiles} domain source files (${totalLines} total lines)`]
-      },
-      dependenciesCount: dependencies.length > 0 ? Math.min(dependencies.length, 6) : 4,
+      complexity: { score: null, label: "Not analyzed", issueCount: 0, issues: [] },
+      dependenciesCount: dependencies.length,
       dependenciesList: dependencies.slice(0, 4).map((d) => d.name),
       position: [center[0], center[1], center[2]],
       radius: 0.38,
       isEntryPoint: false,
       fileCount: totalGroupFiles,
-      symbols: [
-        { name: `${groupName}Namespace`, kind: "module", lines: `1-${totalLines}`, exported: true },
-        { name: `init${groupName}()`, kind: "function", lines: "1-50", exported: true }
-      ]
+      symbols: []
     };
     nodes.push(hubNode);
     nodesById.set(hubId, hubNode);
@@ -434,16 +368,16 @@ export function buildGraphLayout(analysis, repo, options = {}) {
         groupColor: config.color,
         isHub: false,
         lodLevel: fileLod,
-        lines: file.lines || Math.round(100 + (idx * 37) % 400),
-        size: file.size || Math.round(2048 + (idx * 1100) % 20000),
+        lines: file.lines ?? null,
+        size: file.size ?? null,
         complexity,
-        dependenciesCount: Math.max(1, (idx + 2) % 6),
+        dependenciesCount: 0,
         dependenciesList: dependencies.slice(idx % 3, (idx % 3) + 3).map((d) => d.name),
         position: [px, py, pz],
         radius: isEntry ? 0.28 : Math.max(0.12, Math.min(0.24, (complexity.score / 100) * 0.25)),
         isEntryPoint: isEntry,
         hubId,
-        symbols: deriveAstSymbols({ ...file, group: groupName, isEntryPoint: isEntry })
+        symbols: []
       };
 
       nodes.push(fileNode);
@@ -493,45 +427,6 @@ export function buildGraphLayout(analysis, repo, options = {}) {
       addEdge(node.id, node.hubId, "belongs_to", GROUP_CONFIG[node.group].color, node.lodLevel);
     }
   });
-
-  // Inter-cluster Architecture Hub Linkages (Level 0 Overview Edges)
-  const interHubLinks = [
-    { from: "hub-frontend", to: "hub-services", type: "consumes_api", color: "#38bdf8" },
-    { from: "hub-services", to: "hub-backend", type: "delegates_to", color: "#a855f7" },
-    { from: "hub-backend", to: "hub-database", type: "queries_data", color: "#34d399" },
-    { from: "hub-services", to: "hub-database", type: "persists_state", color: "#a855f7" },
-    { from: "hub-utilities", to: "hub-frontend", type: "utilizes", color: "#f43f5e" },
-    { from: "hub-utilities", to: "hub-backend", type: "utilizes", color: "#f43f5e" },
-    { from: "hub-utilities", to: "hub-services", type: "utilizes", color: "#f43f5e" }
-  ];
-
-  interHubLinks.forEach((link) => {
-    addEdge(link.from, link.to, link.type, link.color, LOD_LEVELS.OVERVIEW);
-    const fromNode = nodesById.get(link.from);
-    const toNode = nodesById.get(link.to);
-    if (fromNode && toNode) {
-      aggregatedEdges.push({
-        id: `agg-${link.from}->${link.to}`,
-        fromId: link.from,
-        toId: link.to,
-        fromPos: fromNode.position,
-        toPos: toNode.position,
-        type: link.type,
-        color: link.color,
-        weight: clusterConnectionWeights[`${fromNode.group}->${toNode.group}`] || 1
-      });
-    }
-  });
-
-  // Cross-group file connections (LOD 1 and LOD 2)
-  const feEntries = nodes.filter((n) => n.group === "Frontend" && (n.isEntryPoint || n.name.includes("App")));
-  const beEntries = nodes.filter((n) => n.group === "Backend" && (n.isEntryPoint || n.name.includes("server")));
-  const srvEntries = nodes.filter((n) => n.group === "Services");
-  const dbEntries = nodes.filter((n) => n.group === "Database");
-
-  if (feEntries[0] && srvEntries[0]) addEdge(feEntries[0].id, srvEntries[0].id, "api_call", "#38bdf8", LOD_LEVELS.MODULE);
-  if (srvEntries[0] && beEntries[0]) addEdge(srvEntries[0].id, beEntries[0].id, "routes_to", "#a855f7", LOD_LEVELS.MODULE);
-  if (beEntries[0] && dbEntries[0]) addEdge(beEntries[0].id, dbEntries[0].id, "queries", "#34d399", LOD_LEVELS.MODULE);
 
   // Pre-calculate line vertices arrays for batched rendering across LOD levels
   function computeLinePositions(edgeList) {

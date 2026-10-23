@@ -76,18 +76,18 @@ export default function SettingsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <Settings className="w-6 h-6 text-sky-400" />
-            <h1 className="text-2xl font-bold tracking-tight text-white">
+            <Settings className="w-6 h-6 text-brand-lavender" />
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Platform Settings
             </h1>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Configure organization preferences, AI review models, and extension bridge tokens
           </p>
         </div>
 
         {savedToast && (
-          <div className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs font-mono text-emerald-400 flex items-center gap-2">
+          <div className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-mono text-emerald-600 flex items-center gap-2">
             <Check className="w-4 h-4" />
             <span>Settings saved successfully</span>
           </div>
@@ -95,7 +95,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Tabs Bar */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto text-xs font-mono">
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto text-xs font-mono">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -105,8 +105,8 @@ export default function SettingsPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-colors whitespace-nowrap ${
                 isActive
-                  ? "bg-slate-800 text-sky-400 border border-slate-700/80 font-semibold"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-white text-slate-900 border border-slate-200 shadow-sm font-semibold"
+                  : "text-slate-500 hover:text-slate-900"
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -118,29 +118,29 @@ export default function SettingsPage() {
 
       {/* Tab 1: General Profile */}
       {activeTab === "general" && (
-        <Card className="space-y-6 bg-[#0C101A]">
-          <h2 className="text-base font-bold text-white border-b border-slate-800 pb-3">
+        <Card className="space-y-6 bg-white border-slate-200 shadow-card-sm">
+          <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
             Developer Profile &amp; Organization
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-300">Display Name</label>
+              <label className="text-xs font-medium text-slate-700">Display Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-lg bg-[#080B11] border border-slate-800 text-xs text-slate-100 font-mono focus:outline-none focus:border-sky-500"
+                className="w-full px-3.5 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 font-mono focus:outline-none focus:border-brand-lavender focus:bg-white transition-colors"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-300">Email Address</label>
+              <label className="text-xs font-medium text-slate-700">Email Address</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-lg bg-[#080B11] border border-slate-800 text-xs text-slate-100 font-mono focus:outline-none focus:border-sky-500"
+                className="w-full px-3.5 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 font-mono focus:outline-none focus:border-brand-lavender focus:bg-white transition-colors"
               />
             </div>
           </div>
@@ -151,22 +151,22 @@ export default function SettingsPage() {
             </Button>
           </div>
 
-          <div className="border-t border-slate-800/80 pt-6 space-y-4">
+          <div className="border-t border-slate-100 pt-6 space-y-4">
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 <span>Active Authentication Session</span>
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Current token authentication status and session security
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-xs font-mono">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                  <span className="text-slate-200 font-semibold">{user?.email || "architect@devra.ai"}</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span className="text-slate-900 font-semibold">{user?.email || "architect@devra.ai"}</span>
                   <Badge variant="emerald" size="sm">JWT Verified</Badge>
                 </div>
                 <p className="text-[11px] text-slate-500 font-mono">
@@ -192,14 +192,14 @@ export default function SettingsPage() {
 
       {/* Tab 2: AI Engine Settings */}
       {activeTab === "ai" && (
-        <Card className="space-y-6 bg-[#0C101A]">
-          <h2 className="text-base font-bold text-white border-b border-slate-800 pb-3">
+        <Card className="space-y-6 bg-white border-slate-200 shadow-card-sm">
+          <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
             AI Review &amp; Code Intelligence Configuration
           </h2>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-xs font-medium text-slate-300">
+              <label className="text-xs font-medium text-slate-700">
                 Default Code Review Model
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -213,19 +213,19 @@ export default function SettingsPage() {
                     onClick={() => setSelectedModel(m.id)}
                     className={`p-3.5 rounded-lg border cursor-pointer transition-all ${
                       selectedModel === m.id
-                        ? "border-sky-500 bg-sky-500/10 text-white"
-                        : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700"
+                        ? "border-brand-lavender bg-indigo-50 text-slate-900"
+                        : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-white"
                     }`}
                   >
-                    <div className="font-semibold text-xs text-white">{m.name}</div>
-                    <div className="text-[11px] text-slate-400 mt-1 leading-normal">{m.desc}</div>
+                    <div className="font-semibold text-xs text-slate-900">{m.name}</div>
+                    <div className="text-[11px] text-slate-500 mt-1 leading-normal">{m.desc}</div>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="space-y-2 pt-2">
-              <label className="text-xs font-medium text-slate-300">
+              <label className="text-xs font-medium text-slate-700">
                 Code Review Strictness
               </label>
               <div className="flex items-center gap-3">
@@ -235,8 +235,8 @@ export default function SettingsPage() {
                     onClick={() => setStrictness(mode)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-mono uppercase tracking-wider transition-colors ${
                       strictness === mode
-                        ? "bg-sky-500 text-white font-bold"
-                        : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+                        ? "bg-brand-lavender text-white font-bold"
+                        : "bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900"
                     }`}
                   >
                     {mode}
@@ -256,13 +256,13 @@ export default function SettingsPage() {
 
       {/* Tab 3: API Keys */}
       {activeTab === "keys" && (
-        <Card className="space-y-6 bg-[#0C101A]">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <Card className="space-y-6 bg-white border-slate-200 shadow-card-sm">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-base font-bold text-white">
+              <h2 className="text-base font-bold text-slate-900">
                 API Tokens &amp; VS Code Bridge
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Use these tokens to connect the VS Code extension or CI/CD pipelines
               </p>
             </div>
@@ -271,32 +271,32 @@ export default function SettingsPage() {
             </Button>
           </div>
 
-          <div className="divide-y divide-slate-800">
+          <div className="divide-y divide-slate-100">
             {apiKeys.map((item) => (
               <div key={item.id} className="py-3 flex items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <div className="text-xs font-semibold text-white">{item.name}</div>
-                  <div className="text-xs font-mono text-slate-400">
+                  <div className="text-xs font-semibold text-slate-900">{item.name}</div>
+                  <div className="text-xs font-mono text-slate-500">
                     {item.key.slice(0, 10)}••••••••••••
                   </div>
-                  <div className="text-[10px] font-mono text-slate-500">Created {item.created}</div>
+                  <div className="text-[10px] font-mono text-slate-400">Created {item.created}</div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleCopyKey(item.key, item.id)}
-                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                    className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 transition-colors"
                     title="Copy token"
                   >
                     {copiedKey === item.id ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
                     ) : (
                       <Copy className="w-3.5 h-3.5" />
                     )}
                   </button>
                   <button
                     onClick={() => handleDeleteKey(item.id)}
-                    className="p-2 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
+                    className="p-2 rounded-lg bg-slate-50 hover:bg-rose-50 border border-slate-200 text-slate-400 hover:text-rose-600 transition-colors"
                     title="Revoke token"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -310,26 +310,26 @@ export default function SettingsPage() {
 
       {/* Tab 4: Notifications */}
       {activeTab === "notifications" && (
-        <Card className="space-y-6 bg-[#0C101A]">
-          <h2 className="text-base font-bold text-white border-b border-slate-800 pb-3">
+        <Card className="space-y-6 bg-white border-slate-200 shadow-card-sm">
+          <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
             Automation &amp; Notification Rules
           </h2>
 
           <div className="space-y-4 text-xs">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800">
+            <div className="flex items-center justify-between p-3.5 rounded-lg bg-slate-50 border border-slate-200">
               <div>
-                <p className="font-semibold text-white">Automated PR Review Dispatch</p>
-                <p className="text-slate-400 text-[11px]">Trigger review on pull request open or sync</p>
+                <p className="font-semibold text-slate-900">Automated PR Review Dispatch</p>
+                <p className="text-slate-500 text-[11px]">Trigger review on pull request open or sync</p>
               </div>
-              <input type="checkbox" defaultChecked className="rounded bg-slate-800 text-sky-500 focus:ring-0" />
+              <input type="checkbox" defaultChecked className="rounded border-slate-300 text-brand-lavender focus:ring-brand-lavender/20 accent-brand-lavender cursor-pointer" />
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800">
+            <div className="flex items-center justify-between p-3.5 rounded-lg bg-slate-50 border border-slate-200">
               <div>
-                <p className="font-semibold text-white">Security Vulnerability Alerts</p>
-                <p className="text-slate-400 text-[11px]">Send immediate alert if high/critical CVE is detected</p>
+                <p className="font-semibold text-slate-900">Security Vulnerability Alerts</p>
+                <p className="text-slate-500 text-[11px]">Send immediate alert if high/critical CVE is detected</p>
               </div>
-              <input type="checkbox" defaultChecked className="rounded bg-slate-800 text-sky-500 focus:ring-0" />
+              <input type="checkbox" defaultChecked className="rounded border-slate-300 text-brand-lavender focus:ring-brand-lavender/20 accent-brand-lavender cursor-pointer" />
             </div>
           </div>
         </Card>

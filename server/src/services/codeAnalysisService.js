@@ -2,6 +2,13 @@ import axios from "axios";
 import Analysis from "../models/Analysis.js";
 
 const GITHUB_API_BASE = "https://api.github.com";
+const LINE_COUNT_CONCURRENCY = 16;
+const MAX_LINE_COUNT_FILE_SIZE = 20 * 1024 * 1024;
+const SOURCE_CODE_EXTENSIONS = new Set([
+  "ts", "tsx", "js", "jsx", "mjs", "cjs", "py", "go", "rs", "java",
+  "cpp", "cc", "c", "h", "hpp", "cs", "rb", "php", "swift", "kt",
+  "css", "scss", "sass", "sql", "sh", "bash"
+]);
 
 // Directories and patterns to ignore
 const IGNORED_DIRECTORIES = new Set([
@@ -200,18 +207,19 @@ export const detectModule = (filePath) => {
  * Fetch files from remote GitHub repository tree
  */
 export const fetchRemoteGithubFiles = async (owner, repoName, branch = "main", accessToken = null) => {
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "Devra-Developer-Platform",
+    "X-GitHub-Api-Version": "2022-11-28"
+  };
+
+  if (accessToken && (accessToken.startsWith("gh") || accessToken.startsWith("github_pat_"))) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
   try {
-    const headers = {
-      Accept: "application/vnd.github.v3+json",
-      "User-Agent": "Devra-Developer-Platform"
-    };
-
-    if (accessToken && accessToken.startsWith("gh")) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-
     const response = await axios.get(
-      `${GITHUB_API_BASE}/repos/${owner}/${repoName}/git/trees/${branch}?recursive=1`,
+      `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}/git/trees/${encodeURIComponent(branch)}?recursive=1`,
       { headers, timeout: 8000 }
     );
 
@@ -220,133 +228,93 @@ export const fetchRemoteGithubFiles = async (owner, repoName, branch = "main", a
         .filter((item) => item.type === "blob")
         .map((item) => ({
           path: item.path,
-          size: item.size || 1024,
-          lines: Math.max(1, Math.floor((item.size || 1024) / 45))
+          size: item.size || 0,
+          sha: item.sha
         }));
     }
   } catch (error) {
-    console.warn(`[CodeAnalysis] Remote GitHub tree fetch skipped (${error.message}). Using local tree synthesis.`);
+    // GitHub returns 409 when an empty repository has no commit/tree yet.
+    if (error.response?.status === 409) return [];
+    const status = error.response?.status;
+    const message = status === 404
+      ? `Could not find branch "${branch}" in ${owner}/${repoName}. Sync the repository and try again.`
+      : status === 401 || status === 403
+        ? "GitHub did not allow access to this repository. Reconnect GitHub and try again."
+        : `Could not load files from GitHub${status ? ` (HTTP ${status})` : ""}. Check the connection and try again.`;
+    const fetchError = new Error(message);
+    fetchError.status = status || 502;
+    throw fetchError;
   }
 
-  return null;
+  return [];
 };
 
-/**
- * Synthesize codebase structure for repository
- */
-export const buildCodebaseStructure = (repo) => {
-  // If repository has stored fileTree, use it as baseline
-  const baseFiles = repo.fileTree && repo.fileTree.length > 0 ? repo.fileTree : [];
+const countNonBlankLines = (content) => content
+  .replace(/^\uFEFF/, "")
+  .split(/\r\n|\n|\r/)
+  .filter((line) => line.trim().length > 0).length;
 
-  // Generate a rich, realistic structure if repository has basic seed
-  const defaultFileTemplates = [
-    { path: "src/index.ts", size: 3420, lines: 98 },
-    { path: "src/server.ts", size: 4890, lines: 142 },
-    { path: "src/app.ts", size: 2150, lines: 68 },
-    { path: "src/config/env.ts", size: 1450, lines: 45 },
-    { path: "src/config/database.ts", size: 2890, lines: 82 },
-    { path: "src/controllers/authController.ts", size: 5400, lines: 165 },
-    { path: "src/controllers/repositoryController.ts", size: 6800, lines: 194 },
-    { path: "src/controllers/analysisController.ts", size: 4900, lines: 135 },
-    { path: "src/models/User.ts", size: 3100, lines: 90 },
-    { path: "src/models/Repository.ts", size: 4200, lines: 125 },
-    { path: "src/models/Analysis.ts", size: 4600, lines: 138 },
-    { path: "src/routes/authRoutes.ts", size: 1800, lines: 52 },
-    { path: "src/routes/repositoryRoutes.ts", size: 2400, lines: 74 },
-    { path: "src/routes/analysisRoutes.ts", size: 2100, lines: 65 },
-    { path: "src/services/codeAnalysisService.ts", size: 8500, lines: 245 },
-    { path: "src/services/githubService.ts", size: 6200, lines: 180 },
-    { path: "src/middleware/authMiddleware.ts", size: 2300, lines: 64 },
-    { path: "src/middleware/errorMiddleware.ts", size: 1900, lines: 58 },
-    { path: "client/src/main.tsx", size: 1200, lines: 35 },
-    { path: "client/src/App.tsx", size: 3100, lines: 95 },
-    { path: "client/src/pages/DashboardPage.tsx", size: 9400, lines: 260 },
-    { path: "client/src/pages/RepositoryPage.tsx", size: 8200, lines: 235 },
-    { path: "client/src/pages/CodeReviewPage.tsx", size: 7600, lines: 210 },
-    { path: "client/src/pages/ChatPage.tsx", size: 6900, lines: 190 },
-    { path: "client/src/components/ui/Button.tsx", size: 1800, lines: 55 },
-    { path: "client/src/components/ui/Card.tsx", size: 1400, lines: 40 },
-    { path: "client/src/components/ui/Badge.tsx", size: 1200, lines: 38 },
-    { path: "client/src/services/api.ts", size: 4200, lines: 115 },
-    { path: "shared/types/index.ts", size: 3800, lines: 110 },
-    { path: "docs/architecture.md", size: 6400, lines: 150 },
-    { path: "docs/api.md", size: 5200, lines: 128 },
-    { path: "package.json", size: 1850, lines: 55 },
-    { path: "README.md", size: 4100, lines: 105 }
-  ];
-
-  // If repo has specific files, blend them
-  const filesMap = new Map();
-  for (const t of defaultFileTemplates) {
-    filesMap.set(t.path, t);
+const fetchGithubLineCounts = async ({ owner, repoName, files, accessToken }) => {
+  const sourceFiles = files.filter((file) => SOURCE_CODE_EXTENSIONS.has(
+    file.path.split("/").pop().split(".").pop().toLowerCase()
+  ));
+  const eligibleFiles = sourceFiles.filter((file) => file.size <= MAX_LINE_COUNT_FILE_SIZE);
+  const lineCounts = new Map();
+  const blobLineCounts = new Map();
+  const uniqueBlobs = [...new Map(eligibleFiles.filter((file) => file.sha).map((file) => [file.sha, file])).values()];
+  const hasGithubToken = accessToken && (accessToken.startsWith("gh") || accessToken.startsWith("github_pat_"));
+  // Anonymous repositories are counted in the browser from raw.githubusercontent.com
+  // to avoid spending the user's unauthenticated REST API quota on one request per blob.
+  if (!hasGithubToken) {
+    return { lineCounts, complete: sourceFiles.length === 0 };
   }
+  const blobsToFetch = uniqueBlobs;
+  let nextIndex = 0;
+  let complete = eligibleFiles.length === sourceFiles.length
+    && eligibleFiles.every((file) => Boolean(file.sha));
+  let rateLimited = false;
 
-  for (const f of baseFiles) {
-    const p = f.name.replace(/\\/g, "/");
-    filesMap.set(p, {
-      path: p,
-      size: 2048,
-      lines: 65
-    });
+  const workers = Array.from({ length: Math.min(LINE_COUNT_CONCURRENCY, blobsToFetch.length) }, async () => {
+    while (nextIndex < blobsToFetch.length && !rateLimited) {
+      const file = blobsToFetch[nextIndex++];
+      const headers = {
+        Accept: "application/vnd.github+json",
+        "User-Agent": "Devra-Developer-Platform",
+        "X-GitHub-Api-Version": "2022-11-28"
+      };
+      if (hasGithubToken) headers.Authorization = `Bearer ${accessToken}`;
+      try {
+        const response = await axios.get(
+          `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repoName)}/git/blobs/${file.sha}`,
+          { headers, timeout: 8000 }
+        );
+        if (response.data?.encoding !== "base64" || typeof response.data.content !== "string") {
+          complete = false;
+          continue;
+        }
+        blobLineCounts.set(file.sha, countNonBlankLines(Buffer.from(response.data.content, "base64").toString("utf8")));
+      } catch (error) {
+        complete = false;
+        if (error.response?.status === 403 && /rate limit/i.test(error.response?.data?.message || "")) {
+          rateLimited = true;
+        }
+      }
+    }
+  });
+
+  await Promise.all(workers);
+  for (const file of eligibleFiles) {
+    if (blobLineCounts.has(file.sha)) lineCounts.set(file.path, blobLineCounts.get(file.sha));
+    else complete = false;
   }
-
-  return Array.from(filesMap.values());
+  return { lineCounts, complete };
 };
 
 /**
  * Standard manifest dependencies extraction
  */
 export const extractDependencies = (repo) => {
-  const language = (repo.language || "TypeScript").toLowerCase();
-
-  if (language.includes("python")) {
-    return [
-      { name: "fastapi", version: "^0.110.0", type: "production", ecosystem: "pip" },
-      { name: "uvicorn", version: "^0.29.0", type: "production", ecosystem: "pip" },
-      { name: "pydantic", version: "^2.6.4", type: "production", ecosystem: "pip" },
-      { name: "torch", version: "^2.2.1", type: "production", ecosystem: "pip" },
-      { name: "transformers", version: "^4.39.0", type: "production", ecosystem: "pip" },
-      { name: "pytest", version: "^8.1.1", type: "development", ecosystem: "pip" }
-    ];
-  }
-
-  if (language.includes("go")) {
-    return [
-      { name: "github.com/gin-gonic/gin", version: "v1.9.1", type: "production", ecosystem: "go" },
-      { name: "github.com/golang-jwt/jwt/v5", version: "v5.2.1", type: "production", ecosystem: "go" },
-      { name: "go.mongodb.org/mongo-driver", version: "v1.14.0", type: "production", ecosystem: "go" },
-      { name: "github.com/stretchr/testify", version: "v1.9.0", type: "development", ecosystem: "go" }
-    ];
-  }
-
-  if (language.includes("rust")) {
-    return [
-      { name: "tokio", version: "1.37.0", type: "production", ecosystem: "cargo" },
-      { name: "axum", version: "0.7.5", type: "production", ecosystem: "cargo" },
-      { name: "serde", version: "1.0.200", type: "production", ecosystem: "cargo" },
-      { name: "serde_json", version: "1.0.116", type: "production", ecosystem: "cargo" },
-      { name: "tree-sitter", version: "0.20.10", type: "production", ecosystem: "cargo" }
-    ];
-  }
-
-  // Default: Node.js / TypeScript ecosystem
-  return [
-    { name: "express", version: "^4.21.2", type: "production", ecosystem: "npm" },
-    { name: "mongoose", version: "^8.10.1", type: "production", ecosystem: "npm" },
-    { name: "jsonwebtoken", version: "^9.0.3", type: "production", ecosystem: "npm" },
-    { name: "bcryptjs", version: "^3.0.3", type: "production", ecosystem: "npm" },
-    { name: "cors", version: "^2.8.5", type: "production", ecosystem: "npm" },
-    { name: "helmet", version: "^8.0.0", type: "production", ecosystem: "npm" },
-    { name: "axios", version: "^1.7.9", type: "production", ecosystem: "npm" },
-    { name: "react", version: "^19.0.0", type: "production", ecosystem: "npm" },
-    { name: "react-dom", version: "^19.0.0", type: "production", ecosystem: "npm" },
-    { name: "three", version: "^0.170.0", type: "production", ecosystem: "npm" },
-    { name: "@react-three/fiber", version: "^9.0.0", type: "production", ecosystem: "npm" },
-    { name: "framer-motion", version: "^12.0.0", type: "production", ecosystem: "npm" },
-    { name: "vite", version: "^6.2.0", type: "development", ecosystem: "npm" },
-    { name: "typescript", version: "^5.7.3", type: "development", ecosystem: "npm" },
-    { name: "tailwindcss", version: "^3.4.17", type: "development", ecosystem: "npm" }
-  ];
+  return [];
 };
 
 /**
@@ -355,7 +323,7 @@ export const extractDependencies = (repo) => {
  */
 export const runCodebaseAnalysis = async (repository, user, options = {}) => {
   // Step 1: Fetch raw files
-  let rawFiles = null;
+  let rawFiles;
   if (repository.owner?.login && repository.name) {
     rawFiles = await fetchRemoteGithubFiles(
       repository.owner.login,
@@ -363,14 +331,23 @@ export const runCodebaseAnalysis = async (repository, user, options = {}) => {
       repository.defaultBranch || "main",
       user?.githubAccessToken
     );
-  }
-
-  if (!rawFiles || rawFiles.length === 0) {
-    rawFiles = buildCodebaseStructure(repository);
+  } else {
+    rawFiles = (repository.fileTree || []).map((item) => ({
+      path: item.path || item.name,
+      size: item.size || 0
+    })).filter((item) => item.path);
   }
 
   // Step 2: Filter irrelevant files
   const validFiles = rawFiles.filter((f) => !shouldIgnorePath(f.path));
+  const githubLineCounts = repository.owner?.login
+    ? await fetchGithubLineCounts({
+        owner: repository.owner.login,
+        repoName: repository.name,
+        files: validFiles,
+        accessToken: user?.githubAccessToken
+      })
+    : { lineCounts: new Map(), complete: false };
 
   // Step 3 & 4: Process files, detect languages, entry points, and directory topology
   const fileAnalyses = [];
@@ -380,6 +357,7 @@ export const runCodebaseAnalysis = async (repository, user, options = {}) => {
   const moduleMap = new Map();
 
   let totalLines = 0;
+  let sourceLinesComplete = githubLineCounts.complete || !repository.owner?.login;
   let totalBytes = 0;
 
   for (const item of validFiles) {
@@ -393,10 +371,12 @@ export const runCodebaseAnalysis = async (repository, user, options = {}) => {
     const entryInfo = detectEntryPoint(p);
     const modName = detectModule(p);
 
-    const size = item.size || 1024;
-    const lines = item.lines || Math.max(1, Math.floor(size / 42));
+    const size = item.size || 0;
+    const lines = githubLineCounts.lineCounts.get(p) ?? item.lines ?? null;
+    if (lines === null) sourceLinesComplete = false;
 
-    totalLines += lines;
+    const isSourceCode = SOURCE_CODE_EXTENSIONS.has(ext);
+    if (isSourceCode && lines !== null) totalLines += lines;
     totalBytes += size;
 
     if (entryInfo.isEntry) {
@@ -416,7 +396,7 @@ export const runCodebaseAnalysis = async (repository, user, options = {}) => {
       color: langInfo.color
     };
     langStat.fileCount += 1;
-    langStat.lines += lines;
+    langStat.lines += lines || 0;
     langStat.bytes += size;
     langMap.set(langInfo.name, langStat);
 
@@ -453,7 +433,7 @@ export const runCodebaseAnalysis = async (repository, user, options = {}) => {
       extension: ext,
       language: langInfo.name,
       size,
-      lines,
+      lines: lines ?? 0,
       isEntryPoint: entryInfo.isEntry,
       module: modName
     });
@@ -466,26 +446,20 @@ export const runCodebaseAnalysis = async (repository, user, options = {}) => {
   })).sort((a, b) => b.bytes - a.bytes);
 
   // Step 5: Detect package dependencies
-  const dependencies = extractDependencies(repository);
+  const dependencies = [];
 
   // Step 6: Detect architectural relationships
-  const relationships = [
-    { from: "client", to: "server", type: "consumes_api" },
-    { from: "server/routes", to: "server/controllers", type: "invokes" },
-    { from: "server/controllers", to: "server/services", type: "delegates" },
-    { from: "server/services", to: "server/models", type: "queries_data" },
-    { from: "client/components", to: "client/services", type: "dispatches" }
-  ];
+  const relationships = [];
 
   // Primary language
-  const primaryLanguage = languages[0]?.name || repository.language || "TypeScript";
+  const primaryLanguage = languages[0]?.name || null;
 
   // Step 7: Store in MongoDB
   const analysis = await Analysis.create({
     repositoryId: repository._id,
     userId: user._id,
     totalFiles: fileAnalyses.length,
-    totalLines,
+      totalLines: sourceLinesComplete ? totalLines : null,
     totalDirectories: dirMap.size,
     files: fileAnalyses,
     directories: Array.from(dirMap.values()).sort((a, b) => a.depth - b.depth),
@@ -495,9 +469,12 @@ export const runCodebaseAnalysis = async (repository, user, options = {}) => {
     entryPoints,
     relationships,
     summary: {
+      source: repository.owner?.login ? "github-tree-v4" : "stored-file-tree-v4",
+      lineCountComplete: sourceLinesComplete,
+      repositoryFileCount: rawFiles.length,
       primaryLanguage,
-      architecturePattern: `${primaryLanguage} Modular Architecture`,
-      status: "complete"
+      architecturePattern: primaryLanguage ? `${primaryLanguage} Modular Architecture` : null,
+      status: fileAnalyses.length ? "complete" : "empty"
     },
     generatedAt: new Date()
   });

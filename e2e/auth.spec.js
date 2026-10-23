@@ -11,13 +11,13 @@ test.describe("Authentication and RBAC E2E Workflows", () => {
 
     // Title & Headings
     await expect(page.getByRole("heading", { name: /Sign in to DEVRA/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /Your AI Engineering Companion/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Spatial AI Engineering Workspace/i })).toBeVisible();
 
     // Inputs & Action Elements
     await expect(page.getByPlaceholder("developer@company.com")).toBeVisible();
     await expect(page.getByPlaceholder("Enter your password")).toBeVisible();
     await expect(page.getByRole("button", { name: /Sign In to Devra/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Instant Demo Sign-In/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Continue with GitHub|Instant Demo Sign-In/i })).toHaveCount(0);
     await expect(page.getByText("Remember session on this device")).toBeVisible();
   });
 
@@ -47,19 +47,6 @@ test.describe("Authentication and RBAC E2E Workflows", () => {
     expect(page.url()).toContain("redirect=%2Fdashboard");
   });
 
-  test("Instant Demo Sign-In authorizes user and loads Engineering Console", async ({ page }) => {
-    await page.goto("/login", { waitUntil: "domcontentloaded" });
-    await page.getByRole("button", { name: /Instant Demo Sign-In/i }).click();
-
-    // Redirect to dashboard
-    await page.waitForURL(/\/dashboard/);
-    await expect(page.getByRole("heading", { name: /Engineering Console/i })).toBeVisible();
-
-    // Verify localStorage persistence
-    const hasToken = await page.evaluate(() => !!localStorage.getItem("devra_token"));
-    expect(hasToken).toBe(true);
-  });
-
   test("Sign Out clears session tokens and redirects back to login page", async ({ page }) => {
     await authenticateSession(page, TEST_USERS.ARCHITECT, "/dashboard");
 
@@ -68,7 +55,7 @@ test.describe("Authentication and RBAC E2E Workflows", () => {
     await userButton.click();
 
     // Click Sign Out button
-    await page.getByRole("button", { name: /Sign Out/i }).click();
+    await page.getByRole("button", { name: /Disconnect Session/i }).click();
 
     // Expect redirection to login
     await page.waitForURL(/\/login/);
@@ -89,9 +76,9 @@ test.describe("Authentication and RBAC E2E Workflows", () => {
 
     // Verify navigation items exist and are accessible
     await expect(page.getByRole("link", { name: "Dashboard" })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Repositories/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Code Reviews/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /AI Assistant/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Settings/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Repositories/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Code Reviews/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /AI Assistant/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /Settings/i }).first()).toBeVisible();
   });
 });

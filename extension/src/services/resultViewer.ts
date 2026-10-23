@@ -2,6 +2,19 @@ import * as vscode from "vscode";
 import { ReviewResponse, ChatResponse } from "./apiService";
 
 /**
+ * Robust HTML escaping helper to prevent script injection in webview panels
+ */
+export function escapeHtml(str: any): string {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
  * Displays AI Code Review findings in a dedicated VS Code Webview Panel
  */
 export function showReviewResultsPanel(
@@ -13,7 +26,7 @@ export function showReviewResultsPanel(
     "devpilotReview",
     `DevPilot Review: ${fileName}`,
     vscode.ViewColumn.Beside,
-    { enableScripts: true }
+    { enableScripts: false } // No scripts needed for review findings viewer
   );
 
   const severityColor =
@@ -99,51 +112,52 @@ export function showReviewResultsPanel(
     .btn:hover {
       background: var(--vscode-button-hoverBackground, #0369a1);
     }
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
   </style>
 </head>
 <body>
   <div class="header">
     <div>
-      <h2 style="margin: 0; font-size: 18px; color: #fff;">${title}</h2>
-      <span style="font-family: monospace; font-size: 12px; color: #64748b;">File: ${fileName}</span>
+      <h2 style="margin: 0; font-size: 18px; color: #fff;">${escapeHtml(title)}</h2>
+      <span style="font-family: monospace; font-size: 12px; color: #64748b;">File: ${escapeHtml(fileName)}</span>
     </div>
     <div style="text-align: right;">
       <span class="badge" style="background: ${severityColor}22; color: ${severityColor}; border: 1px solid ${severityColor}66;">
-        ${review.severity.toUpperCase()}
+        ${escapeHtml(review.severity).toUpperCase()}
       </span>
-      <div class="score" style="color: ${severityColor};">${review.score}<span style="font-size: 14px; color: #64748b;"> / 100</span></div>
+      <div class="score" style="color: ${severityColor};">${escapeHtml(review.score)}<span style="font-size: 14px; color: #64748b;"> / 100</span></div>
     </div>
   </div>
 
   <div class="card" style="border-left: 3px solid #38bdf8;">
     <div class="card-title" style="color: #38bdf8;">Executive Summary</div>
-    <p style="margin: 0;">${review.summary}</p>
+    <p style="margin: 0;">${escapeHtml(review.summary)}</p>
   </div>
 
-  <h3 style="color: #fff; margin-top: 24px;">Flagged Issues (${review.issues.length})</h3>
-  ${review.issues.map(issue => `
+  <h3 style="color: #fff; margin-top: 24px;">Flagged Issues (${review.issues ? review.issues.length : 0})</h3>
+  ${(review.issues || []).map(issue => `
     <div class="card" style="border-left: 3px solid ${issue.severity === 'critical' ? '#f43f5e' : issue.severity === 'high' ? '#fbbf24' : '#38bdf8'};">
       <div class="card-title">
-        <span>${issue.title}</span>
+        <span>${escapeHtml(issue.title)}</span>
         <span class="badge" style="background: #1e293b; color: #94a3b8;">
-          ${issue.line ? `Line ${issue.line}` : issue.type}
+          ${issue.line ? `Line ${escapeHtml(issue.line)}` : escapeHtml(issue.type)}
         </span>
       </div>
-      <p style="margin: 4px 0 8px 0; color: #cbd5e1;">${issue.description}</p>
-      <span style="font-size: 10px; font-family: monospace; color: #64748b;">Rule: ${issue.rule || 'code-quality'}</span>
+      <p style="margin: 4px 0 8px 0; color: #cbd5e1;">${escapeHtml(issue.description)}</p>
+      <span style="font-size: 10px; font-family: monospace; color: #64748b;">Rule: ${escapeHtml(issue.rule || 'code-quality')}</span>
     </div>
   `).join('')}
 
-  ${review.suggestions.length > 0 ? `
+  ${review.suggestions && review.suggestions.length > 0 ? `
     <h3 style="color: #fff; margin-top: 24px;">Actionable Fixes &amp; Patches (${review.suggestions.length})</h3>
-    ${review.suggestions.map((sug, i) => `
+    ${review.suggestions.map((sug) => `
       <div class="card" style="border-left: 3px solid #34d399;">
         <div class="card-title">
-          <span>${sug.title}</span>
-          <span class="badge" style="background: #064e3b; color: #34d399;">Impact: ${sug.impact}</span>
+          <span>${escapeHtml(sug.title)}</span>
+          <span class="badge" style="background: #064e3b; color: #34d399;">Impact: ${escapeHtml(sug.impact)}</span>
         </div>
-        <p style="margin: 4px 0 8px 0;">${sug.description}</p>
-        ${sug.codeSnippet ? `<pre>${sug.codeSnippet.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>` : ''}
+        <p style="margin: 4px 0 8px 0;">${escapeHtml(sug.description)}</p>
+        ${sug.codeSnippet ? `<pre>${escapeHtml(sug.codeSnippet)}</pre>` : ''}
       </div>
     `).join('')}
   ` : ''}
@@ -162,14 +176,18 @@ export function showContentPanel(
 ): void {
   const panel = vscode.window.createWebviewPanel(
     "devpilotContent",
-    `DevPilot: ${title}`,
+    `DevPilot: ${escapeHtml(title)}`,
     vscode.ViewColumn.Beside,
-    { enableScripts: true }
+    { enableScripts: false } // Static content display requires no script execution
   );
 
-  const formattedContent = content
+  // First HTML-escape the raw untrusted content so injected scripts and HTML tags become benign
+  const safeContent = escapeHtml(content);
+
+  // Then convert markdown tokens to safe structured HTML formatting
+  const formattedContent = safeContent
     .replace(/```([a-zA-Z0-9_\-]+)?\n([\s\S]*?)```/g, (_match, _lang, code) => {
-      return `<pre><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
+      return `<pre><code>${code}</code></pre>`;
     })
     .replace(/^### (.*$)/gim, '<h3 style="color: #38bdf8; margin-top: 18px;">$1</h3>')
     .replace(/^## (.*$)/gim, '<h2 style="color: #fff; margin-top: 20px;">$1</h2>')
@@ -181,6 +199,7 @@ export function showContentPanel(
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
   <style>
     body {
       font-family: var(--vscode-font-family, -apple-system, sans-serif);
@@ -227,8 +246,8 @@ export function showContentPanel(
 </head>
 <body>
   <div class="header">
-    <h2 style="margin: 0 0 4px 0; color: #fff;">${title}</h2>
-    <span style="font-family: monospace; font-size: 12px; color: #64748b;">Context: ${fileName}</span>
+    <h2 style="margin: 0 0 4px 0; color: #fff;">${escapeHtml(title)}</h2>
+    <span style="font-family: monospace; font-size: 12px; color: #64748b;">Context: ${escapeHtml(fileName)}</span>
   </div>
 
   <div style="font-size: 13px;">
@@ -243,7 +262,7 @@ export function showContentPanel(
       <div>
         ${sourceReferences.map(ref => `
           <span class="chip">
-            &bull; ${ref.filePath} (Lines ${ref.lineRange}) [${ref.relevanceScore}%]
+            &bull; ${escapeHtml(ref.filePath)} (Lines ${escapeHtml(ref.lineRange)}) [${escapeHtml(ref.relevanceScore)}%]
           </span>
         `).join('')}
       </div>

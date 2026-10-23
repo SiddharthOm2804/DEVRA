@@ -84,11 +84,24 @@ export const getGithubUserProfile = async (accessToken) => {
     }
   });
 
+  let email = response.data.email;
+  if (!email) {
+    const emailsResponse = await axios.get(`${GITHUB_API_BASE}/user/emails`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github.v3+json",
+        "User-Agent": "Devra-Developer-Platform"
+      }
+    });
+    email = (emailsResponse.data || []).find((item) => item.primary && item.verified)?.email ||
+      (emailsResponse.data || []).find((item) => item.verified)?.email || null;
+  }
+
   return {
     id: String(response.data.id),
     username: response.data.login,
     name: response.data.name || response.data.login,
-    email: response.data.email,
+    email,
     avatarUrl: response.data.avatar_url,
     htmlUrl: response.data.html_url,
     publicRepos: response.data.public_repos
@@ -164,7 +177,7 @@ export const formatGithubRepo = (repo) => {
     isPrivate: !!repo.private,
     visibility: repo.private ? "private" : "public",
     lastUpdated: repo.updated_at || repo.pushed_at || new Date(),
-    health: Math.floor(Math.random() * 12) + 88, // 88 - 100 initial benchmark
+    health: 100, // Initial unscanned benchmark
     qualityGrade: "A+",
     securityStatus: "Secure"
   };

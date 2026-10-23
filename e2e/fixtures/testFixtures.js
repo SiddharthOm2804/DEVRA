@@ -381,6 +381,13 @@ export async function setupDeterministicMockApi(page, user = TEST_USERS.ARCHITEC
     });
   });
 
+  // Register after the broad agent handler because Playwright evaluates routes
+  // in reverse order. EventSource retries failed requests indefinitely; HTTP
+  // 204 cleanly disables reconnection during tests.
+  await page.route("**/api/agent/tasks/*/events**", async (route) => {
+    await route.fulfill({ status: 204, contentType: "text/event-stream" });
+  });
+
   // Logout endpoint
   await page.route("**/api/auth/logout", async (route) => {
     await route.fulfill({

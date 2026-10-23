@@ -28,7 +28,7 @@ app.use(
 );
 
 // CORS Configuration: Supports Web Client, Local Dev, and VS Code Extension
-const allowedOrigins = [
+export const defaultAllowedOrigins = [
   config.clientUrl,
   "http://localhost:5173",
   "http://127.0.0.1:5173",
@@ -36,25 +36,44 @@ const allowedOrigins = [
   "http://127.0.0.1:3000"
 ].filter(Boolean);
 
+export const corsOriginHandler = (allowedOrigins = defaultAllowedOrigins, isProduction = config.isProduction) => {
+  return (origin, callback) => {
+    // Requests with no origin (VS Code extension, curl, server-to-server) are allowed
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // In production, reject unapproved origins strictly
+    if (isProduction) {
+      return callback(new Error("Not allowed by CORS"));
+    }
+
+    // In non-production/development only allow if explicitly matched, or block CORS headers
+    return callback(null, false);
+  };
+};
+
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (e.g., VS Code extension, curl, server-to-server)
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Permissive in dev, or fallback to allowed
-      }
-    },
+    origin: corsOriginHandler(),
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"]
   })
 );
 
-// HTTP Request Logger
+// HTTP Request Logger with URL credential redaction
+morgan.token("sanitized-url", (req) => {
+  const url = req.originalUrl || req.url;
+  return url.replace(/([?&](?:token|oauth_token|ticket|code)=)[^&]+/gi, "$1[REDACTED]");
+});
+
 if (config.nodeEnv !== "test") {
-  app.use(morgan("dev"));
+  app.use(morgan(":method :sanitized-url :status :res[content-length] - :response-time ms"));
 }
 
 // Body Parsing Middlewares with safe size boundaries and rawBody capture for webhooks

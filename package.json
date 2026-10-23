@@ -10,7 +10,11 @@
     "shared"
   ],
   "scripts": {
+    "setup": "npm install",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\" --names \"SERVER,CLIENT\" --prefix-colors \"blue,green\"",
+    "dev:infra": "docker compose up -d mongodb redis",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
     "dev:extension": "npm --prefix extension run watch",
@@ -22,7 +26,7 @@
     "test": "npm --prefix server test",
     "test:e2e": "playwright test",
     "test:e2e:report": "playwright show-report",
-    "install:all": "npm install && npm --prefix server install && npm --prefix client install && npm --prefix extension install"
+    "install:all": "npm install"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",

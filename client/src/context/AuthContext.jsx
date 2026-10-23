@@ -16,17 +16,38 @@ export function AuthProvider({ children }) {
   // On mount: Check for OAuth callback token or verify stored session
   useEffect(() => {
     const verifyUserSession = async () => {
-      // 1. Check if token was returned via OAuth callback query param
+      // 1. Check if single-use exchange ticket or legacy token was returned via OAuth callback query param
       const urlParams = new URLSearchParams(window.location.search);
+      const ticket = urlParams.get("ticket");
       const oauthToken = urlParams.get("oauth_token");
       
-      let effectiveToken = oauthToken || localStorage.getItem("devra_token") || sessionStorage.getItem("devra_token");
-      
-      if (oauthToken) {
+      let effectiveToken = localStorage.getItem("devra_token") || sessionStorage.getItem("devra_token");
+
+      if (ticket) {
+        try {
+          const exchangeRes = await authApi.exchangeTicket(ticket);
+          if (exchangeRes.success && exchangeRes.token) {
+            effectiveToken = exchangeRes.token;
+            localStorage.setItem("devra_token", effectiveToken);
+            setToken(effectiveToken);
+            if (exchangeRes.user) {
+              setUser(exchangeRes.user);
+              localStorage.setItem("devra_user", JSON.stringify(exchangeRes.user));
+            }
+          }
+        } catch (err) {
+          console.error("Failed to exchange OAuth ticket:", err);
+        }
+        urlParams.delete("ticket");
+      } else if (oauthToken) {
         localStorage.setItem("devra_token", oauthToken);
         setToken(oauthToken);
-        // Clean up URL without full page reload
+        effectiveToken = oauthToken;
         urlParams.delete("oauth_token");
+      }
+
+      if (ticket || oauthToken) {
+        // Clean up URL without full page reload
         const remainingQuery = urlParams.toString();
         const cleanedUrl = window.location.pathname + (remainingQuery ? `?${remainingQuery}` : "");
         window.history.replaceState({}, document.title, cleanedUrl);
@@ -114,10 +135,22 @@ export function AuthProvider({ children }) {
         return { success: true };
       }
       const friendlyMsg = data.message || "Invalid email or password.";
+      if (data.code === "ACCOUNT_NOT_FOUND") {
+        return { success: false, code: data.code, message: friendlyMsg };
+      }
       setError(friendlyMsg);
       return { success: false, message: friendlyMsg };
     } catch (err) {
       const friendlyMsg = formatAuthError(err, "Invalid email or password.");
+      const code = err.response?.data?.code;
+      // Some API deployments may return the account-not-found message before
+      // they include the structured code. Preserve the redirect behavior for
+      // that specific response while leaving incorrect-password errors alone.
+      const accountNotFound = code === "ACCOUNT_NOT_FOUND"
+        || err.response?.data?.message?.toLowerCase().includes("no account exists for this email");
+      if (accountNotFound) {
+        return { success: false, code: "ACCOUNT_NOT_FOUND", message: friendlyMsg };
+      }
       setError(friendlyMsg);
       return { success: false, message: friendlyMsg };
     }

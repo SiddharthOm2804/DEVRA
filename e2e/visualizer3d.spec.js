@@ -46,7 +46,7 @@ test.describe("Three.js Level of Detail 3D Visualizer Workflows", () => {
     await expect(page.locator("canvas")).toBeVisible({ timeout: 20000 });
 
     // Verify LOD controls are present
-    const autoButton = page.getByRole("button", { name: "Auto" });
+    const autoButton = page.getByRole("button", { name: "Auto", exact: true });
     const l0Button = page.getByRole("button", { name: "L0" });
     const l1Button = page.getByRole("button", { name: "L1" });
     const l2Button = page.getByRole("button", { name: "L2" });

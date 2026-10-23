@@ -70,7 +70,7 @@ export const getAnalysis = async (req, res, next) => {
     let analysis = await codeAnalysisService.getLatestAnalysis(repositoryId, req.user._id);
 
     // If no analysis exists yet, run initial analysis on demand
-    if (!analysis) {
+    if (!analysis || (repository.owner?.login && analysis.summary?.source !== "github-tree-v4")) {
       const user = await User.findById(req.user._id).select("+githubAccessToken");
       analysis = await codeAnalysisService.runCodebaseAnalysis(repository, user);
     }

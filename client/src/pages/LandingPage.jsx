@@ -29,6 +29,7 @@ import {
   Server
 } from "lucide-react";
 import Navbar from "../components/Navbar";
+import HeroGlassTypography3D from "../components/visualization/HeroGlassTypography3D";
 import HeroCodebase3D from "../components/visualization/HeroCodebase3D";
 import Codebase3DShowcase from "../components/visualization/Codebase3DShowcase";
 import Button from "../components/ui/Button";
@@ -96,7 +97,7 @@ export const requireAuth = (req, res, next) => {
     {
       id: "rev-3",
       severity: "MEDIUM",
-      severityVariant: "sky",
+      severityVariant: "citron",
       title: "Missing Cleanup in React Timer Effect",
       rule: "react-hooks/exhaustive-cleanup",
       file: "client/src/components/MetricCounter.jsx",
@@ -111,7 +112,7 @@ export const requireAuth = (req, res, next) => {
     {
       id: "rev-4",
       severity: "LOW",
-      severityVariant: "emerald",
+      severityVariant: "jade",
       title: "Non-strict Equality Operator in Status Check",
       rule: "style/strict-equality",
       file: "server/src/utils/statusCheck.js",
@@ -123,136 +124,171 @@ export const requireAuth = (req, res, next) => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#060911] text-slate-100 flex flex-col antialiased selection:bg-violet-500/25 selection:text-violet-200">
+    <div className="min-h-screen bg-abyssal-dark text-abyssal-ivory flex flex-col antialiased selection:bg-abyssal-jade/30 selection:text-abyssal-jade">
       {/* 1. Global Redesigned Sticky Navbar */}
       <Navbar />
 
       <main className="flex-1">
         {/* ==================================================
-            2. HERO SECTION — CINEMATIC 3D WORKSPACE
+            2. HERO SECTION — ABYSSAL JADE × 3D GLASS TYPOGRAPHY
             ================================================== */}
-        <section id="hero" className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-20 sm:pt-20 sm:pb-28">
-          {/* Subtle background ambient glow */}
-          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] bg-violet-600/10 blur-[150px] rounded-full pointer-events-none" />
-          <div className="absolute top-1/3 right-1/4 w-[420px] h-[420px] bg-cyan-500/10 blur-[140px] rounded-full pointer-events-none" />
+        <section id="hero" className="relative overflow-hidden bg-abyssal-dark py-20 sm:py-28 border-b border-abyssal-border">
+          {/* Signature 3D Translucent Glass Typography suspended in Abyssal Jade environment */}
+          <HeroGlassTypography3D />
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Content */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55 }}
-              className="lg:col-span-6 space-y-6"
-            >
-              {/* Badge: NEXT-GEN AI DEVELOPER PLATFORM */}
-              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-violet-500/15 via-cyan-500/10 to-transparent border border-violet-500/30 text-xs font-mono text-violet-300 shadow-sm shadow-violet-950/20">
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-400" />
-                </span>
-                <span className="tracking-wider uppercase font-semibold">Autonomous Spatial AI Platform</span>
-              </div>
+          {/* Subtle architectural grid pattern */}
+          <div className="absolute inset-0 bg-devra-grid-dark opacity-35 pointer-events-none" />
 
-              {/* Large Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.08]">
-                Visualize Code. <br />
-                <span className="bg-gradient-to-r from-violet-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent glow-text-violet">
-                  Engineer Faster.
-                </span>
-              </h1>
+          {/* Soft atmospheric gradient accents */}
+          <div className="absolute -top-32 left-1/4 w-[550px] h-[550px] bg-abyssal-jade/10 blur-[150px] rounded-full pointer-events-none" />
+          <div className="absolute top-1/2 right-10 w-[450px] h-[450px] bg-abyssal-citron/10 blur-[150px] rounded-full pointer-events-none" />
 
-              {/* Description */}
-              <p className="text-base sm:text-lg text-slate-300/80 max-w-xl leading-relaxed">
-                Step into a living 3D spatial engineering workspace. Devra combines deep AST syntax analysis,
-                automated pull request verification, persistent vector retrieval, and autonomous agents in real time.
-              </p>
-
-              {/* Primary & Secondary CTAs */}
-              <div className="flex flex-wrap items-center gap-3.5 pt-2">
-                <Link to="/dashboard">
-                  <Button variant="primary" size="lg" icon={ArrowRight}>
-                    Launch Console
-                  </Button>
-                </Link>
-                <a href="#codebase-3d">
-                  <Button variant="secondary" size="lg" icon={Box}>
-                    Explore Spatial 3D
-                  </Button>
-                </a>
-              </div>
-
-              {/* Monospace Operational Metrics & Heartbeat */}
-              <div className="pt-6 flex flex-wrap items-center gap-6 text-xs font-mono text-slate-400 border-t border-white/10">
-                <div className="flex items-center gap-2">
-                  <span className="text-white font-semibold">14</span> Repositories Monitored
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
+              {/* Left Column: Clear Value Proposition */}
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55 }}
+                className="lg:col-span-6 space-y-6"
+              >
+                {/* Refined Eyebrow Pill Tag */}
+                <div className="inline-flex items-center gap-2.5 px-3.5 py-1 rounded-full bg-abyssal-card border border-abyssal-border shadow-card-sm text-xs font-mono text-abyssal-secondary">
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-abyssal-jade opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-abyssal-jade" />
+                  </span>
+                  <span className="font-semibold text-abyssal-ivory tracking-wide">DEVRA 2.4</span>
+                  <span className="text-abyssal-border">|</span>
+                  <span className="text-abyssal-jade">Spatial AI Developer Platform</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-emerald-400 font-semibold">96.4%</span> Code Quality
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-cyan-300 font-semibold">&lt; 1.2s</span> Review Latency
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      serverHealth.status === "ok" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
-                    }`}
-                  />
-                  <span>Engine: {serverHealth.status === "ok" ? "Online" : "Standby"}</span>
-                </div>
-              </div>
-            </motion.div>
 
-            {/* Right: Living Software 3D Visualization */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.65, delay: 0.15 }}
-              className="lg:col-span-6"
-            >
-              <HeroCodebase3D />
-            </motion.div>
+                {/* Primary Hero Heading */}
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-abyssal-ivory tracking-[-0.055em] leading-[0.98] font-display">
+                  The AI Developer{" "}
+                  <span className="bg-gradient-to-r from-abyssal-jade via-abyssal-ivory to-abyssal-citron bg-clip-text text-transparent">
+                    Platform.
+                  </span>
+                </h1>
+
+                {/* Supporting description */}
+                <p className="text-base sm:text-lg text-abyssal-secondary max-w-xl leading-relaxed font-sans">
+                  Understand complex codebases through translucent 3D spatial dependency graphs, automated AST code reviews,
+                  real-time vector intelligence, and autonomous agent workflows.
+                </p>
+
+                {/* Action CTAs */}
+                <div className="flex flex-wrap items-center gap-3.5 pt-1">
+                  <Link to="/dashboard">
+                    <Button variant="primary" size="lg" icon={ArrowRight} className="shadow-jade-glow">
+                      Open Workspace
+                    </Button>
+                  </Link>
+                  <Link to="/repositories">
+                    <Button variant="secondary" size="lg" icon={GitBranch}>
+                      Explore Repositories
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* Live Engineering Telemetry Strip */}
+                <div className="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-abyssal-border">
+                  <div className="space-y-0.5">
+                    <div className="text-lg font-bold text-abyssal-ivory font-mono">14+</div>
+                    <div className="text-xs text-abyssal-muted font-sans">Active Repos</div>
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="text-lg font-bold text-abyssal-jade font-mono">98.2%</div>
+                    <div className="text-xs text-abyssal-muted font-sans">AST Health</div>
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="text-lg font-bold text-abyssal-citron font-mono">&lt; 1.2s</div>
+                    <div className="text-xs text-abyssal-muted font-sans">Review Latency</div>
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5 pt-1">
+                      <span
+                        className={`w-2.5 h-2.5 rounded-full ${
+                          serverHealth.status === "ok" ? "bg-abyssal-jade animate-pulse" : "bg-amber-500"
+                        }`}
+                      />
+                      <span className="text-xs font-mono font-medium text-abyssal-secondary">
+                        {serverHealth.status === "ok" ? "Engine Active" : "Standby"}
+                      </span>
+                    </div>
+                    <div className="text-xs text-abyssal-muted font-sans">Core Cluster</div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Right Column: Premium 3D Workspace Visualization */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.15 }}
+                className="lg:col-span-6"
+              >
+                <div className="relative p-2 sm:p-2.5 rounded-2xl bg-abyssal-card border border-abyssal-border shadow-card-jade">
+                  {/* Subtle Top Window Bar */}
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-abyssal-border bg-abyssal-surface/70 rounded-t-xl mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-abyssal-jade" />
+                      <span className="text-[11px] font-mono text-abyssal-muted ml-2">devra-topology.spatial</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] font-mono text-abyssal-secondary">
+                      <span className="w-1.5 h-1.5 rounded-full bg-abyssal-jade animate-pulse" />
+                      <span>AST Depth 0</span>
+                    </div>
+                  </div>
+
+                  {/* 3D Codebase Canvas */}
+                  <HeroCodebase3D />
+                </div>
+              </motion.div>
+            </div>
           </div>
         </section>
 
         {/* ==================================================
             3. DEVELOPER ECOSYSTEM & LANGUAGES SECTION
             ================================================== */}
-        <section className="border-y border-slate-800/80 bg-[#090D15]/60 py-10">
+        <section className="border-y border-abyssal-border bg-abyssal-card py-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <p className="text-center text-xs font-mono uppercase tracking-widest text-slate-500 mb-6">
+            <p className="text-center text-xs font-mono uppercase tracking-widest text-abyssal-muted mb-6">
               Native AST Intelligence Across Multi-Language Codebases
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 text-slate-400 text-sm font-mono">
-              <span className="flex items-center gap-2 hover:text-sky-300 transition-colors">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3178c6]" />
+            <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 text-abyssal-secondary text-sm font-mono">
+              <span className="flex items-center gap-2 hover:text-abyssal-ivory transition-colors">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#55D6BE]" />
                 TypeScript
               </span>
-              <span className="flex items-center gap-2 hover:text-sky-300 transition-colors">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#00add8]" />
+              <span className="flex items-center gap-2 hover:text-abyssal-ivory transition-colors">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#D5E56B]" />
                 Go
               </span>
-              <span className="flex items-center gap-2 hover:text-sky-300 transition-colors">
+              <span className="flex items-center gap-2 hover:text-abyssal-ivory transition-colors">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#3572a5]" />
                 Python
               </span>
-              <span className="flex items-center gap-2 hover:text-sky-300 transition-colors">
+              <span className="flex items-center gap-2 hover:text-abyssal-ivory transition-colors">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#dea584]" />
                 Rust
               </span>
-              <span className="flex items-center gap-2 hover:text-sky-300 transition-colors">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#61dafb]" />
+              <span className="flex items-center gap-2 hover:text-abyssal-ivory transition-colors">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#55D6BE]" />
                 React 19
               </span>
-              <span className="flex items-center gap-2 hover:text-sky-300 transition-colors">
+              <span className="flex items-center gap-2 hover:text-abyssal-ivory transition-colors">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#68a063]" />
                 Node.js
               </span>
-              <span className="flex items-center gap-2 hover:text-sky-300 transition-colors">
+              <span className="flex items-center gap-2 hover:text-abyssal-ivory transition-colors">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#e535ab]" />
                 GraphQL
               </span>
-              <span className="flex items-center gap-2 hover:text-sky-300 transition-colors">
+              <span className="flex items-center gap-2 hover:text-abyssal-ivory transition-colors">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#2496ed]" />
                 Docker
               </span>
@@ -261,80 +297,80 @@ export const requireAuth = (req, res, next) => {
         </section>
 
         {/* ==================================================
-            4. AI CODEBASE INTELLIGENCE CARDS
+            4. AI CODEBASE INTELLIGENCE CARDS (Abyssal Surface Section)
             ================================================== */}
         <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
           <div className="mb-14 space-y-3 text-center sm:text-left">
-            <Badge variant="cyan" size="sm">COMPREHENSIVE CODE ENGINE</Badge>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+            <Badge variant="jade" size="sm">COMPREHENSIVE CODE ENGINE</Badge>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-abyssal-ivory tracking-tight">
               AI Codebase Intelligence
             </h2>
-            <p className="text-sm sm:text-base text-slate-400 max-w-2xl leading-relaxed">
+            <p className="text-sm sm:text-base text-abyssal-secondary max-w-2xl leading-relaxed">
               Deterministic AST tree scanning fused with semantic embeddings. Devra detects design smells,
               breaking API surface modifications, and cyclical leaks before they reach your pull requests.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            <Card hover className="space-y-4 bg-[#0C101A] border-slate-800">
-              <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+            <Card hover dark className="space-y-4">
+              <div className="w-10 h-10 rounded-xl bg-abyssal-jade/10 border border-abyssal-jade/25 flex items-center justify-center text-abyssal-jade">
                 <GitPullRequest className="w-5 h-5" />
               </div>
               <div className="space-y-1.5">
-                <h3 className="text-base font-bold text-white">Automated Code Reviews</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <h3 className="text-base font-bold text-abyssal-ivory">Automated Code Reviews</h3>
+                <p className="text-xs text-abyssal-secondary leading-relaxed">
                   Real-time pull request inspection classifying defects across Critical, High, Medium, and Low risk thresholds with instant drop-in diff fixes.
                 </p>
               </div>
-              <Link to="/reviews" className="inline-flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 font-mono font-medium">
+              <Link to="/reviews" className="inline-flex items-center gap-1.5 text-xs text-abyssal-jade hover:text-abyssal-ivory font-mono font-medium">
                 <span>Inspect reviews</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </Card>
 
-            <Card hover className="space-y-4 bg-[#0C101A] border-slate-800">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+            <Card hover dark className="space-y-4">
+              <div className="w-10 h-10 rounded-xl bg-abyssal-citron/10 border border-abyssal-citron/25 flex items-center justify-center text-abyssal-citron">
                 <Box className="w-5 h-5" />
               </div>
               <div className="space-y-1.5">
-                <h3 className="text-base font-bold text-white">3D Spatial Mapping</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <h3 className="text-base font-bold text-abyssal-ivory">3D Spatial Mapping</h3>
+                <p className="text-xs text-abyssal-secondary leading-relaxed">
                   WebGL galaxy visualizing architecture clusters, dependency calls, and code health with interactive camera focus and node inspection.
                 </p>
               </div>
-              <a href="#codebase-3d" className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 font-mono font-medium">
+              <a href="#codebase-3d" className="inline-flex items-center gap-1.5 text-xs text-abyssal-citron hover:text-abyssal-ivory font-mono font-medium">
                 <span>View 3D visualizer</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </a>
             </Card>
 
-            <Card hover className="space-y-4 bg-[#0C101A] border-slate-800">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <Card hover dark className="space-y-4">
+              <div className="w-10 h-10 rounded-xl bg-abyssal-jade/10 border border-abyssal-jade/25 flex items-center justify-center text-abyssal-jade">
                 <MessageSquareCode className="w-5 h-5" />
               </div>
               <div className="space-y-1.5">
-                <h3 className="text-base font-bold text-white">Codebase Chat & RAG</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <h3 className="text-base font-bold text-abyssal-ivory">Codebase Chat &amp; RAG</h3>
+                <p className="text-xs text-abyssal-secondary leading-relaxed">
                   Ask deep structural questions and generate regression tests. Every response cites exact verified file paths and line ranges.
                 </p>
               </div>
-              <Link to="/chat" className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-mono font-medium">
+              <Link to="/chat" className="inline-flex items-center gap-1.5 text-xs text-abyssal-jade hover:text-abyssal-ivory font-mono font-medium">
                 <span>Start AI session</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </Card>
 
-            <Card hover className="space-y-4 bg-[#0C101A] border-slate-800">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+            <Card hover dark className="space-y-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400">
                 <Terminal className="w-5 h-5" />
               </div>
               <div className="space-y-1.5">
-                <h3 className="text-base font-bold text-white">VS Code Extension</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <h3 className="text-base font-bold text-abyssal-ivory">VS Code Extension</h3>
+                <p className="text-xs text-abyssal-secondary leading-relaxed">
                   Native editor extension connecting your IDE directly to Devra’s cluster for inline diagnostics, side-by-side diffs, and chat.
                 </p>
               </div>
-              <Link to="/settings" className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 font-mono font-medium">
+              <Link to="/settings" className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-abyssal-ivory font-mono font-medium">
                 <span>Extension setup</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </Link>
@@ -350,18 +386,18 @@ export const requireAuth = (req, res, next) => {
         {/* ==================================================
             6. AI CODE REVIEW SHOWCASE SECTION
             ================================================== */}
-        <section id="ai-review" className="max-w-7xl mx-auto px-4 sm:px-6 py-20 border-t border-slate-800/80">
+        <section id="ai-review" className="max-w-7xl mx-auto px-4 sm:px-6 py-20 border-t border-abyssal-border">
           <div className="mb-10 space-y-3">
             <Badge variant="rose" size="sm">PRECISE INLINE REVIEW ENGINE</Badge>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-abyssal-ivory tracking-tight">
               Automated Pull Request Code Review
             </h2>
-            <p className="text-sm sm:text-base text-slate-400 max-w-2xl leading-relaxed">
+            <p className="text-sm sm:text-base text-abyssal-secondary max-w-2xl leading-relaxed">
               Every pull request is automatically analyzed across 4 strict severity tiers:
               <strong className="text-rose-400 ml-1">CRITICAL</strong>,
               <strong className="text-amber-400 ml-1">HIGH</strong>,
-              <strong className="text-sky-400 ml-1">MEDIUM</strong>, and
-              <strong className="text-emerald-400 ml-1">LOW</strong>.
+              <strong className="text-abyssal-citron ml-1">MEDIUM</strong>, and
+              <strong className="text-abyssal-jade ml-1">LOW</strong>.
               Review explanations include file citations, impact summaries, and drop-in code remedies.
             </p>
           </div>
@@ -377,8 +413,8 @@ export const requireAuth = (req, res, next) => {
                     onClick={() => setExpandedReviewIndex(idx)}
                     className={`p-4 rounded-xl border transition-all cursor-pointer ${
                       isExpanded
-                        ? "bg-[#0E1422] border-sky-500/50 shadow-lg shadow-sky-500/5"
-                        : "bg-[#0C101A] border-slate-800 hover:border-slate-700"
+                        ? "bg-abyssal-surface border-abyssal-jade shadow-lg shadow-abyssal-jade/5"
+                        : "bg-abyssal-card border-abyssal-border hover:border-abyssal-borderLight"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3">
@@ -386,30 +422,30 @@ export const requireAuth = (req, res, next) => {
                         <Badge variant={rev.severityVariant} size="sm">
                           {rev.severity}
                         </Badge>
-                        <h4 className="text-sm font-mono font-bold text-white truncate max-w-xs sm:max-w-md">
+                        <h4 className="text-sm font-mono font-bold text-abyssal-ivory truncate max-w-xs sm:max-w-md">
                           {rev.title}
                         </h4>
                       </div>
                       <ChevronDown
-                        className={`w-4 h-4 text-slate-500 transition-transform ${
-                          isExpanded ? "rotate-180 text-sky-400" : ""
+                        className={`w-4 h-4 text-abyssal-muted transition-transform ${
+                          isExpanded ? "rotate-180 text-abyssal-jade" : ""
                         }`}
                       />
                     </div>
 
-                    <div className="mt-2 flex items-center gap-3 text-xs font-mono text-slate-400">
-                      <span className="text-sky-300">{rev.file}</span>
+                    <div className="mt-2 flex items-center gap-3 text-xs font-mono text-abyssal-secondary">
+                      <span className="text-abyssal-jade">{rev.file}</span>
                       <span>&bull;</span>
                       <span>Line {rev.line}</span>
                       <span>&bull;</span>
-                      <span className="text-slate-500">{rev.rule}</span>
+                      <span className="text-abyssal-muted">{rev.rule}</span>
                     </div>
 
                     {isExpanded && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
-                        className="mt-3 pt-3 border-t border-slate-800/80 text-xs text-slate-300 leading-relaxed"
+                        className="mt-3 pt-3 border-t border-abyssal-border text-xs text-abyssal-secondary leading-relaxed"
                       >
                         <p>{rev.explanation}</p>
                       </motion.div>
@@ -421,14 +457,14 @@ export const requireAuth = (req, res, next) => {
 
             {/* Right: Active Selected Issue Code Diff */}
             <div className="lg:col-span-6 sticky top-20">
-              <div className="rounded-xl border border-slate-800 bg-[#0C101A] overflow-hidden shadow-xl">
-                <div className="px-4 py-3 bg-[#0E1424] border-b border-slate-800 flex items-center justify-between">
+              <div className="rounded-xl border border-abyssal-border bg-abyssal-card overflow-hidden shadow-xl">
+                <div className="px-4 py-3 bg-abyssal-surface border-b border-abyssal-border flex items-center justify-between">
                   <div className="flex items-center gap-2 font-mono text-xs">
-                    <FileCode className="w-4 h-4 text-sky-400" />
-                    <span className="text-white font-semibold">
+                    <FileCode className="w-4 h-4 text-abyssal-jade" />
+                    <span className="text-abyssal-ivory font-semibold">
                       {sampleReviews[expandedReviewIndex]?.file}
                     </span>
-                    <span className="text-slate-500">&bull;</span>
+                    <span className="text-abyssal-muted">&bull;</span>
                     <Badge variant={sampleReviews[expandedReviewIndex]?.severityVariant} size="sm">
                       {sampleReviews[expandedReviewIndex]?.severity}
                     </Badge>
@@ -439,7 +475,7 @@ export const requireAuth = (req, res, next) => {
                     </Button>
                   </Link>
                 </div>
-                <div className="p-4 bg-[#070A0F]">
+                <div className="p-4 bg-abyssal-dark">
                   <CodeSnippet
                     code={sampleReviews[expandedReviewIndex]?.suggestedFix || ""}
                     language="typescript"
@@ -454,19 +490,19 @@ export const requireAuth = (req, res, next) => {
         {/* ==================================================
             7. AI CODEBASE CONVERSATIONAL CHAT (RAG)
             ================================================== */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20 border-t border-slate-800/80">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20 border-t border-abyssal-border">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             <div className="lg:col-span-5 space-y-4">
-              <Badge variant="purple" size="sm">VECTOR EMBEDDING SEARCH</Badge>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              <Badge variant="jade" size="sm">VECTOR EMBEDDING SEARCH</Badge>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-abyssal-ivory tracking-tight">
                 Conversational Codebase (RAG)
               </h2>
-              <p className="text-sm text-slate-400 leading-relaxed">
+              <p className="text-sm text-abyssal-secondary leading-relaxed">
                 Devra grounds every AI interaction in verified source chunks. Ask architectural questions,
                 trace async call flows, or synthesize integration tests without risking hallucinated code.
               </p>
               <div className="space-y-2 pt-2">
-                <span className="text-xs font-mono uppercase text-slate-500 tracking-wider block">
+                <span className="text-xs font-mono uppercase text-abyssal-muted tracking-wider block">
                   Quick Query Starters:
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -478,7 +514,7 @@ export const requireAuth = (req, res, next) => {
                     <button
                       key={q}
                       onClick={() => setChatQuestion(q)}
-                      className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-mono text-slate-300 hover:text-white transition-colors"
+                      className="px-2.5 py-1 rounded-lg bg-abyssal-card hover:bg-abyssal-surface border border-abyssal-border text-xs font-mono text-abyssal-secondary hover:text-abyssal-ivory transition-colors"
                     >
                       {q}
                     </button>
@@ -496,40 +532,40 @@ export const requireAuth = (req, res, next) => {
 
             {/* Chat Simulator Preview */}
             <div className="lg:col-span-7">
-              <div className="rounded-2xl border border-slate-800 bg-[#0C101A] shadow-2xl overflow-hidden font-mono text-xs">
+              <div className="rounded-2xl border border-abyssal-border bg-abyssal-card shadow-2xl overflow-hidden font-mono text-xs">
                 {/* Chat Header */}
-                <div className="px-4 py-3 bg-[#0E1422] border-b border-slate-800 flex items-center justify-between">
+                <div className="px-4 py-3 bg-abyssal-surface border-b border-abyssal-border flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                    <span className="text-white font-semibold">Devra Code Intelligence &bull; devra-core</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-abyssal-jade" />
+                    <span className="text-abyssal-ivory font-semibold">Devra Code Intelligence &bull; devra-core</span>
                   </div>
-                  <span className="text-[10px] text-slate-500">128-d L2 Vector Index</span>
+                  <span className="text-[10px] text-abyssal-muted">128-d L2 Vector Index</span>
                 </div>
 
                 {/* Messages Body */}
-                <div className="p-4 space-y-4 bg-[#080B11]">
+                <div className="p-4 space-y-4 bg-abyssal-dark">
                   {/* User query */}
                   <div className="flex gap-3 max-w-xl ml-auto flex-row-reverse">
-                    <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center text-white shrink-0 text-[11px] font-bold">
+                    <div className="w-7 h-7 rounded-lg bg-abyssal-jade flex items-center justify-center text-abyssal-dark shrink-0 text-[11px] font-bold">
                       You
                     </div>
-                    <div className="p-3.5 rounded-2xl bg-sky-600 text-white leading-relaxed">
+                    <div className="p-3.5 rounded-2xl bg-abyssal-surface text-abyssal-ivory border border-abyssal-border leading-relaxed">
                       {chatQuestion}
                     </div>
                   </div>
 
                   {/* Devra AI Response */}
                   <div className="flex gap-3 max-w-2xl mr-auto">
-                    <div className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center text-sky-400 shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-abyssal-card border border-abyssal-border flex items-center justify-center text-abyssal-jade shrink-0">
                       <Sparkles className="w-3.5 h-3.5" />
                     </div>
-                    <div className="p-4 rounded-2xl bg-[#0F1422] border border-slate-800 text-slate-200 space-y-3 leading-relaxed">
+                    <div className="p-4 rounded-2xl bg-abyssal-card border border-abyssal-border text-abyssal-secondary space-y-3 leading-relaxed">
                       <p>{chatAnswer.text}</p>
 
                       {/* Source Citation Badge */}
                       <div className="flex items-center gap-2 pt-1">
-                        <span className="text-[10px] text-slate-500 uppercase">Citation:</span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-sky-500/10 border border-sky-500/30 text-sky-300 text-[11px]">
+                        <span className="text-[10px] text-abyssal-muted uppercase">Citation:</span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-abyssal-jade/15 border border-abyssal-jade/30 text-abyssal-jade text-[11px]">
                           <FileCode className="w-3 h-3" />
                           <span>{chatAnswer.file}</span>
                         </span>
@@ -553,23 +589,23 @@ export const requireAuth = (req, res, next) => {
         {/* ==================================================
             8. VS CODE EXTENSION & AUTONOMOUS AGENT MODE
             ================================================== */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20 border-t border-slate-800/80">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20 border-t border-abyssal-border">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Left: VS Code Extension Card */}
-            <div className="p-6 sm:p-8 rounded-2xl border border-slate-800 bg-[#0C101A] space-y-5 flex flex-col justify-between">
+            <div className="p-6 sm:p-8 rounded-2xl border border-abyssal-border bg-abyssal-card space-y-5 flex flex-col justify-between">
               <div className="space-y-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
                   <Terminal className="w-5 h-5" />
                 </div>
-                <h3 className="text-xl font-bold text-white">VS Code Native Extension</h3>
-                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                <h3 className="text-xl font-bold text-abyssal-ivory">VS Code Native Extension</h3>
+                <p className="text-xs sm:text-sm text-abyssal-secondary leading-relaxed">
                   Bring Devra directly into your developer environment. Includes instant command palette actions,
                   context menu review triggers, side-by-side git diff comparisons, and a dedicated sidebar assistant.
                 </p>
-                <div className="pt-2 flex flex-wrap gap-2 text-xs font-mono text-slate-400">
-                  <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800">Inline Diagnostics</span>
-                  <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800">F5 Extension Debug</span>
-                  <span className="px-2 py-1 rounded bg-slate-900 border border-slate-800">Side-by-Side Diffs</span>
+                <div className="pt-2 flex flex-wrap gap-2 text-xs font-mono text-abyssal-muted">
+                  <span className="px-2 py-1 rounded bg-abyssal-surface border border-abyssal-border text-abyssal-secondary">Inline Diagnostics</span>
+                  <span className="px-2 py-1 rounded bg-abyssal-surface border border-abyssal-border text-abyssal-secondary">F5 Extension Debug</span>
+                  <span className="px-2 py-1 rounded bg-abyssal-surface border border-abyssal-border text-abyssal-secondary">Side-by-Side Diffs</span>
                 </div>
               </div>
               <Link to="/settings">
@@ -580,21 +616,21 @@ export const requireAuth = (req, res, next) => {
             </div>
 
             {/* Right: Autonomous Agent Mode Card */}
-            <div className="p-6 sm:p-8 rounded-2xl border border-slate-800 bg-[#0C101A] space-y-5 flex flex-col justify-between">
+            <div className="p-6 sm:p-8 rounded-2xl border border-abyssal-border bg-abyssal-card space-y-5 flex flex-col justify-between">
               <div className="space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                <div className="w-10 h-10 rounded-xl bg-abyssal-jade/10 border border-abyssal-jade/20 flex items-center justify-center text-abyssal-jade">
                   <Cpu className="w-5 h-5" />
                 </div>
-                <h3 className="text-xl font-bold text-white">Autonomous Agent Mode</h3>
-                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                <h3 className="text-xl font-bold text-abyssal-ivory">Autonomous Agent Mode</h3>
+                <p className="text-xs sm:text-sm text-abyssal-secondary leading-relaxed">
                   Provide high-level feature requests or refactoring goals. Devra synthesizes a complete step-by-step
                   implementation plan, presents unified diffs, and awaits your manual approval before applying file modifications safely.
                 </p>
                 <div className="pt-2 grid grid-cols-4 gap-2 text-[10px] font-mono text-center">
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800 text-sky-300">1. Plan</div>
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800 text-indigo-300">2. Review</div>
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800 text-amber-300">3. Diff</div>
-                  <div className="p-2 rounded bg-slate-900 border border-slate-800 text-emerald-300">4. Apply</div>
+                  <div className="p-2 rounded bg-abyssal-surface border border-abyssal-border text-abyssal-jade">1. Plan</div>
+                  <div className="p-2 rounded bg-abyssal-surface border border-abyssal-border text-abyssal-citron">2. Review</div>
+                  <div className="p-2 rounded bg-abyssal-surface border border-abyssal-border text-amber-300">3. Diff</div>
+                  <div className="p-2 rounded bg-abyssal-surface border border-abyssal-border text-emerald-300">4. Apply</div>
                 </div>
               </div>
               <Link to="/repositories">
@@ -610,23 +646,23 @@ export const requireAuth = (req, res, next) => {
             9. CALL TO ACTION (CTA)
             ================================================== */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
-          <div className="relative rounded-3xl p-8 sm:p-14 overflow-hidden border border-slate-800 bg-gradient-to-b from-[#0E1424] to-[#0A0D15] text-center space-y-6 shadow-2xl">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-sky-500/15 blur-[120px] rounded-full pointer-events-none" />
+          <div className="relative rounded-3xl p-8 sm:p-14 overflow-hidden border border-abyssal-border bg-gradient-to-b from-abyssal-card to-abyssal-dark text-center space-y-6 shadow-2xl">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-abyssal-jade/10 blur-[130px] rounded-full pointer-events-none" />
 
             <DevraLogo size="lg" showText={true} className="justify-center" />
 
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-abyssal-ivory tracking-tight">
               Build Better. Ship Smarter.
             </h2>
 
-            <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto leading-relaxed">
+            <p className="text-sm sm:text-base text-abyssal-secondary max-w-xl mx-auto leading-relaxed">
               Join elite software engineering teams deploying autonomous code reviews,
               3D architectural graphs, and vector codebase comprehension.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
               <Link to="/dashboard">
-                <Button variant="primary" size="lg" icon={ArrowRight}>
+                <Button variant="primary" size="lg" icon={ArrowRight} className="shadow-jade-glow">
                   Enter Devra Console
                 </Button>
               </Link>
@@ -643,23 +679,23 @@ export const requireAuth = (req, res, next) => {
       {/* ==================================================
           10. FOOTER WITH BRANDING & TAGLINE
           ================================================== */}
-      <footer className="border-t border-slate-800/80 bg-[#070A10] px-4 sm:px-6 py-10 text-xs text-slate-500 font-mono">
+      <footer className="border-t border-abyssal-border bg-abyssal-dark px-4 sm:px-6 py-10 text-xs text-abyssal-muted font-mono">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <DevraLogo size="sm" showText={true} />
-            <span className="text-slate-600">&bull;</span>
-            <span className="text-slate-400">Your AI Engineering Companion</span>
+            <span className="text-abyssal-border">&bull;</span>
+            <span className="text-abyssal-secondary">Your AI Engineering Companion</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 text-slate-400">
-            <Link to="/dashboard" className="hover:text-white transition-colors">Console</Link>
-            <Link to="/repositories" className="hover:text-white transition-colors">Repositories</Link>
-            <Link to="/reviews" className="hover:text-white transition-colors">Code Reviews</Link>
-            <Link to="/chat" className="hover:text-white transition-colors">AI Chat</Link>
-            <Link to="/settings" className="hover:text-white transition-colors">Settings</Link>
+          <div className="flex flex-wrap items-center gap-6 text-abyssal-secondary">
+            <Link to="/dashboard" className="hover:text-abyssal-ivory transition-colors">Console</Link>
+            <Link to="/repositories" className="hover:text-abyssal-ivory transition-colors">Repositories</Link>
+            <Link to="/reviews" className="hover:text-abyssal-ivory transition-colors">Code Reviews</Link>
+            <Link to="/chat" className="hover:text-abyssal-ivory transition-colors">AI Chat</Link>
+            <Link to="/settings" className="hover:text-abyssal-ivory transition-colors">Settings</Link>
           </div>
 
-          <div className="text-slate-500 text-center md:text-right">
+          <div className="text-abyssal-muted text-center md:text-right">
             <span>&copy; {new Date().getFullYear()} Devra Platform. Enterprise Developer Tools.</span>
           </div>
         </div>

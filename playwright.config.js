@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const apiPort = process.env.PLAYWRIGHT_API_PORT || "5000";
+const clientPort = process.env.PLAYWRIGHT_CLIENT_PORT || "5173";
+
 /**
  * Playwright E2E Configuration for DEVRA
  * Supports local execution and CI environments.
@@ -20,10 +23,10 @@ export default defineConfig({
     ["json", { outputFile: "playwright-report/test-results.json" }]
   ],
   use: {
-    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || "http://localhost:5173",
+    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || `http://localhost:${clientPort}`,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
-    video: "retain-on-failure",
+    video: process.env.CI ? "off" : "retain-on-failure",
     actionTimeout: 15000,
     navigationTimeout: 30000
   },
@@ -51,21 +54,24 @@ export default defineConfig({
   webServer: [
     {
       command: "npm --prefix server start",
-      url: "http://localhost:5000/api/health",
-      reuseExistingServer: true,
+      url: `http://localhost:${apiPort}/api/health`,
+      reuseExistingServer: !process.env.CI,
       timeout: 35000,
       env: {
-        PORT: "5000",
+        PORT: apiPort,
         NODE_ENV: "test",
         MONGODB_URI: process.env.MONGODB_URI || "mongodb://localhost:27017/devra",
         JWT_SECRET: "test_e2e_jwt_secret_devra_2026"
       }
     },
     {
-      command: "npm --prefix client run dev -- --port 5173",
-      url: "http://localhost:5173",
-      reuseExistingServer: true,
-      timeout: 35000
+      command: `npm --prefix client run dev -- --port ${clientPort}`,
+      url: `http://localhost:${clientPort}`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 35000,
+      env: {
+        VITE_API_PROXY_TARGET: `http://localhost:${apiPort}`
+      }
     }
   ]
 });

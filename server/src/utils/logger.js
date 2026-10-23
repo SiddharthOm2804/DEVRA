@@ -10,10 +10,49 @@ const LOG_LEVELS = {
 
 const currentLevel = process.env.NODE_ENV === "production" ? LOG_LEVELS.INFO : LOG_LEVELS.DEBUG;
 
+const SENSITIVE_KEYS = new Set([
+  "token",
+  "accesstoken",
+  "githubaccesstoken",
+  "authorization",
+  "password",
+  "secret",
+  "ticket",
+  "code"
+]);
+
+function sanitizeData(data, depth = 0) {
+  if (!data || depth > 4) return data;
+  if (typeof data === "string") {
+    // Redact JWT-like strings or bearer headers
+    return data
+      .replace(/Bearer\s+[A-Za-z0-9\-_=]+\.[A-Za-z0-9\-_=]+\.?[A-Za-z0-9\-_=]*/gi, "Bearer [REDACTED]")
+      .replace(/([?&](?:token|oauth_token|ticket|code)=)[^&]+/gi, "$1[REDACTED]");
+  }
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeData(item, depth + 1));
+  }
+  if (typeof data === "object") {
+    const sanitized = {};
+    for (const [k, v] of Object.entries(data)) {
+      const lower = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (SENSITIVE_KEYS.has(lower) || lower.includes("secret") || lower.includes("password") || lower.includes("token")) {
+        sanitized[k] = "[REDACTED]";
+      } else {
+        sanitized[k] = sanitizeData(v, depth + 1);
+      }
+    }
+    return sanitized;
+  }
+  return data;
+}
+
 function formatMessage(level, message, meta) {
   const timestamp = new Date().toISOString();
-  const metaString = meta && Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : "";
-  return `[${timestamp}] [${level}] ${message}${metaString}`;
+  const safeMessage = typeof message === "string" ? sanitizeData(message) : message;
+  const safeMeta = meta ? sanitizeData(meta) : meta;
+  const metaString = safeMeta && Object.keys(safeMeta).length > 0 ? ` ${JSON.stringify(safeMeta)}` : "";
+  return `[${timestamp}] [${level}] ${safeMessage}${metaString}`;
 }
 
 export const logger = {

@@ -137,7 +137,7 @@ const repositorySchema = new mongoose.Schema(
     },
     filesCount: {
       type: Number,
-      default: 10
+      default: 0
     },
     isStarred: {
       type: Boolean,
@@ -145,11 +145,7 @@ const repositorySchema = new mongoose.Schema(
     },
     fileTree: {
       type: [fileItemSchema],
-      default: [
-        { name: "src/index.ts", size: "3.2 KB", commit: "Initial setup", time: "Just now", type: "file" },
-        { name: "package.json", size: "1.1 KB", commit: "Configure dependencies", time: "Just now", type: "file" },
-        { name: "README.md", size: "2.4 KB", commit: "Add documentation", time: "Just now", type: "file" }
-      ]
+      default: []
     }
   },
   {

@@ -294,31 +294,38 @@ export const sendMessage = async (req, res, next) => {
       });
     }
 
-    // 3. Generate answer using remote AI model or local synthesis engine
+    // 3. Generate answer using remote AI model or return truthful provider unavailable message
     let assistantReply = "";
     let generatedSnippet = "";
 
     const apiKey = config.ai.apiKey;
     const provider = (config.ai.provider || "gemini").toLowerCase();
 
-    if (apiKey) {
-      try {
-        if (provider === "openai") {
-          assistantReply = await callOpenAIChat(message, contextString, chat.messages);
-        } else {
-          assistantReply = await callGeminiChat(message, contextString, chat.messages);
-        }
-      } catch (aiErr) {
-        console.warn(`[Codebase Chat] Remote AI error: ${aiErr.message}. Falling back to synthesis.`);
-        const local = generateLocalDeveloperAnswer(message, [], sourceReferences);
-        assistantReply = local.text;
-        generatedSnippet = local.codeSnippet;
-      }
-    } else {
-      const local = generateLocalDeveloperAnswer(message, [], sourceReferences);
-      assistantReply = local.text;
-      generatedSnippet = local.codeSnippet;
+    if (!apiKey) {
+      return res.status(503).json({
+        success: false,
+        code: "AI_PROVIDER_UNCONFIGURED",
+        message: "No AI provider API key is configured. Please configure an AI API key in project settings.",
+        sourceReferences: []
+      });
     }
+
+    try {
+      if (provider === "openai") {
+        assistantReply = await callOpenAIChat(message, contextString, chat.messages);
+      } else {
+        assistantReply = await callGeminiChat(message, contextString, chat.messages);
+      }
+    } catch (aiErr) {
+      console.warn(`[Codebase Chat] Remote AI error: ${aiErr.message}`);
+      return res.status(502).json({
+        success: false,
+        code: "AI_PROVIDER_ERROR",
+        message: `Remote AI service error: ${aiErr.message || "Failed to generate answer."}`,
+        sourceReferences: []
+      });
+    }
+
 
     // 4. Save both user message and assistant reply with source references
     const userMessage = {

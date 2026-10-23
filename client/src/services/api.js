@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+// Use the same origin by default: Vite proxies /api in development and Nginx
+// proxies /api in the Docker deployment. Set VITE_API_URL only for a remote API.
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -63,6 +65,22 @@ export const authApi = {
     const params = new URLSearchParams({ mode });
     if (redirect) params.append("redirect", redirect);
     const response = await apiClient.get(`/api/auth/github/url?${params.toString()}`);
+    return response.data;
+  },
+  forgotPassword: async (email) => {
+    const response = await apiClient.post("/api/auth/forgot-password", { email });
+    return response.data;
+  },
+  resetPassword: async (token, password) => {
+    const response = await apiClient.post(`/api/auth/reset-password/${token}`, { password });
+    return response.data;
+  },
+  exchangeTicket: async (ticket) => {
+    const response = await apiClient.post("/api/auth/exchange-ticket", { ticket });
+    return response.data;
+  },
+  getStreamTicket: async () => {
+    const response = await apiClient.post("/api/auth/stream-ticket");
     return response.data;
   }
 };
@@ -218,13 +236,14 @@ export const agentApi = {
     const response = await apiClient.get("/api/agent", { params });
     return response.data;
   },
-  getStreamUrl: (sessionId) => {
-    const token = localStorage.getItem("devra_token") || "";
-    return `${API_BASE_URL}/api/agent/tasks/${sessionId}/events?token=${encodeURIComponent(token)}`;
+  getStreamUrl: (sessionId, ticket = "") => {
+    const query = ticket ? `?ticket=${encodeURIComponent(ticket)}` : "";
+    return `${API_BASE_URL}/api/agent/tasks/${sessionId}/events${query}`;
   },
-  createEventStream: (sessionId, { onEvent, onError, onOpen } = {}) => {
-    const token = localStorage.getItem("devra_token") || "";
-    const url = `${API_BASE_URL}/api/agent/tasks/${sessionId}/events?token=${encodeURIComponent(token)}`;
+  createEventStream: (sessionId, { onEvent, onError, onOpen, ticket = "" } = {}) => {
+    // F-009: Connect via short-lived single-use ticket
+    const query = ticket ? `?ticket=${encodeURIComponent(ticket)}` : "";
+    const url = `${API_BASE_URL}/api/agent/tasks/${sessionId}/events${query}`;
     const eventSource = new EventSource(url);
 
     if (onOpen) eventSource.onopen = onOpen;

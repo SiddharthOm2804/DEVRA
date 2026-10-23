@@ -19,19 +19,36 @@ export class DevPilotSidebarProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._extensionUri]
     };
 
-    webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+    const nonce = this._getNonce();
+    webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, nonce);
+
+    // Explicit allowlist of permissible extension commands that can be invoked from the webview
+    const ALLOWED_COMMANDS = new Set([
+      "devpilot.agentMode",
+      "devpilot.explainCode",
+      "devpilot.reviewCode",
+      "devpilot.refactorCode",
+      "devpilot.generateTests"
+    ]);
 
     // Listen to messages from the webview UI
     webviewView.webview.onDidReceiveMessage(async (data) => {
+      if (!data || typeof data !== "object" || typeof data.type !== "string") {
+        return;
+      }
+
       const apiService = ApiService.getInstance();
 
       switch (data.type) {
         case "executeCommand": {
-          vscode.commands.executeCommand(data.command);
+          if (typeof data.command === "string" && ALLOWED_COMMANDS.has(data.command)) {
+            vscode.commands.executeCommand(data.command);
+          }
           break;
         }
 
         case "sendMessage": {
+          if (typeof data.text !== "string") return;
           const messageText = data.text;
           if (!messageText || !messageText.trim()) return;
 
@@ -139,11 +156,21 @@ export class DevPilotSidebarProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private _getHtmlForWebview(_webview: vscode.Webview): string {
+  private _getNonce(): string {
+    let text = "";
+    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for (let i = 0; i < 32; i++) {
+      text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+  }
+
+  private _getHtmlForWebview(webview: vscode.Webview, nonce: string): string {
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DevPilot</title>
   <style>
@@ -351,7 +378,7 @@ export class DevPilotSidebarProvider implements vscode.WebviewViewProvider {
     </div>
   </div>
 
-  <script>
+  <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
 
     const messagesContainer = document.getElementById('messagesContainer');
@@ -396,23 +423,43 @@ export class DevPilotSidebarProvider implements vscode.WebviewViewProvider {
       vscode.postMessage({ type: 'setToken' });
     });
 
+    // Helper to safely append multiline text without innerHTML
+    function appendSafeText(targetElement, rawText) {
+      const lines = String(rawText || '').split('\n');
+      lines.forEach((line, index) => {
+        if (index > 0) {
+          targetElement.appendChild(document.createElement('br'));
+        }
+        targetElement.appendChild(document.createTextNode(line));
+      });
+    }
+
     // Handle messages from extension host
     window.addEventListener('message', (event) => {
       const msg = event.data;
+      if (!msg || typeof msg !== 'object') return;
+
       switch (msg.type) {
         case 'addMessage': {
+          if (!msg.message) return;
           const div = document.createElement('div');
-          div.className = 'msg ' + msg.message.role;
-          div.innerHTML = msg.message.content.replace(/\\n/g, '<br/>');
+          const safeRole = msg.message.role === 'user' ? 'user' : 'assistant';
+          div.className = 'msg ' + safeRole;
 
-          if (msg.message.sourceReferences && msg.message.sourceReferences.length > 0) {
+          const contentSpan = document.createElement('div');
+          appendSafeText(contentSpan, msg.message.content);
+          div.appendChild(contentSpan);
+
+          if (Array.isArray(msg.message.sourceReferences) && msg.message.sourceReferences.length > 0) {
             const citDiv = document.createElement('div');
             citDiv.style.marginTop = '6px';
             msg.message.sourceReferences.forEach(ref => {
-              const chip = document.createElement('span');
-              chip.className = 'citation-chip';
-              chip.innerText = ref.fileName + ' (L' + ref.lineRange + ')';
-              citDiv.appendChild(chip);
+              if (ref && typeof ref === 'object') {
+                const chip = document.createElement('span');
+                chip.className = 'citation-chip';
+                chip.textContent = String(ref.fileName || '') + ' (L' + String(ref.lineRange || '') + ')';
+                citDiv.appendChild(chip);
+              }
             });
             div.appendChild(citDiv);
           }

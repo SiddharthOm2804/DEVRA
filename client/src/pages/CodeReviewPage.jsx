@@ -325,17 +325,17 @@ export default function CodeReviewPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+            <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-lavender">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-white font-mono">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-mono">
                   AI Code Review Engine
                 </h1>
-                <Badge variant="cyan" size="sm">v2.4 Active</Badge>
+                <Badge variant="blue" size="sm">v2.4 Active</Badge>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Automated AST verification, vulnerability scanning, and semantic patch generation
               </p>
             </div>
@@ -366,26 +366,26 @@ export default function CodeReviewPage() {
 
       {/* NEW REVIEW CREATOR / INPUT ACCORDION */}
       {showInputModal && (
-        <Card className="bg-[#0C101A] border-sky-500/30 space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2 text-sky-400 font-mono text-xs font-bold uppercase">
+        <Card className="bg-white border-slate-200 shadow-card-sm space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2 text-brand-lavender font-mono text-xs font-bold uppercase">
               <Play className="w-4 h-4" />
               <span>Configure &amp; Run AI Review</span>
             </div>
             <span className="text-xs text-slate-500 font-mono">
-              Provider: <strong className="text-slate-300">Gemini 1.5 Pro / Local AST</strong>
+              Provider: <strong className="text-slate-800">Gemini 1.5 Pro / Local AST</strong>
             </span>
           </div>
 
           {/* Quick Preset Selector */}
           <div className="space-y-2 font-mono">
-            <span className="text-[11px] text-slate-400 block uppercase">1-Click Test Scenarios:</span>
+            <span className="text-[11px] text-slate-500 block uppercase">1-Click Test Scenarios:</span>
             <div className="flex flex-wrap gap-2">
               {PRESET_TEMPLATES.map((tpl, i) => (
                 <button
                   key={i}
                   onClick={() => handleSelectTemplate(tpl)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:text-sky-300 hover:border-slate-700 transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 hover:text-brand-lavender hover:border-brand-lavender hover:bg-white transition-colors"
                 >
                   &bull; {tpl.name}
                 </button>
@@ -538,33 +538,33 @@ export default function CodeReviewPage() {
       {selectedReview ? (
         <div className="space-y-6">
           {/* Executive Overview Card */}
-          <Card className="bg-[#0C101A] border-slate-800 space-y-6">
+          <Card className="bg-white border-slate-200 shadow-card-sm space-y-6">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                  <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-lavender">
                     <FileCode className="w-5 h-5" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2.5">
-                      <h2 className="text-xl font-bold font-mono text-white">
+                      <h2 className="text-xl font-bold font-mono text-slate-900">
                         {selectedReview.title || selectedReview.fileName}
                       </h2>
                       {getSeverityBadge(selectedReview.severity)}
                     </div>
-                    <p className="text-xs font-mono text-slate-400">
-                      File: <span className="text-slate-200 font-semibold">{selectedReview.fileName}</span> &bull; Language: {selectedReview.language || "JavaScript"}
+                    <p className="text-xs font-mono text-slate-500">
+                      File: <span className="text-slate-800 font-semibold">{selectedReview.fileName}</span> &bull; Language: {selectedReview.language || "JavaScript"}
                     </p>
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
+                <p className="text-xs text-slate-600 max-w-3xl leading-relaxed">
                   {selectedReview.summary}
                 </p>
 
-                <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-400 pt-1">
+                <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-500 pt-1">
                   <span>
-                    Provider: <strong className="text-slate-200">{selectedReview.aiProvider}</strong> ({selectedReview.aiModel})
+                    Provider: <strong className="text-slate-800">{selectedReview.aiProvider}</strong> ({selectedReview.aiModel})
                   </span>
                   <span>&bull;</span>
                   <span>
@@ -573,7 +573,7 @@ export default function CodeReviewPage() {
                   {selectedReview.repositoryId && (
                     <>
                       <span>&bull;</span>
-                      <span className="text-sky-400 font-medium">
+                      <span className="text-brand-lavender font-medium">
                         Repository: {selectedReview.repositoryId.name || "devra-core"}
                       </span>
                     </>
@@ -591,21 +591,21 @@ export default function CodeReviewPage() {
                     <span
                       className={`text-3xl font-extrabold ${
                         selectedReview.score >= 80
-                          ? "text-emerald-400"
+                          ? "text-emerald-600"
                           : selectedReview.score >= 60
-                          ? "text-amber-400"
-                          : "text-rose-400"
+                          ? "text-amber-600"
+                          : "text-rose-600"
                       }`}
                     >
                       {selectedReview.score}
                     </span>
-                    <span className="text-xs text-slate-500">/ 100</span>
+                    <span className="text-xs text-slate-400">/ 100</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() => handleDeleteReview(selectedReview._id)}
-                  className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                  className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                   title="Delete Review"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -614,48 +614,48 @@ export default function CodeReviewPage() {
             </div>
 
             {/* Metrics Counter Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 border-t border-slate-800/80 text-xs font-mono">
-              <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400 flex items-center gap-1.5">
-                  <Bug className="w-3.5 h-3.5 text-rose-400" /> Bugs
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 border-t border-slate-100 text-xs font-mono">
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <span className="text-slate-600 flex items-center gap-1.5">
+                  <Bug className="w-3.5 h-3.5 text-rose-500" /> Bugs
                 </span>
-                <span className="font-bold text-white">
+                <span className="font-bold text-slate-900">
                   {selectedReview.metrics?.bugsCount || 0}
                 </span>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400 flex items-center gap-1.5">
-                  <ShieldAlert className="w-3.5 h-3.5 text-rose-400" /> Security
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <span className="text-slate-600 flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-500" /> Security
                 </span>
-                <span className="font-bold text-white">
+                <span className="font-bold text-slate-900">
                   {selectedReview.metrics?.securityCount || 0}
                 </span>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400 flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-amber-400" /> Performance
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <span className="text-slate-600 flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-500" /> Performance
                 </span>
-                <span className="font-bold text-white">
+                <span className="font-bold text-slate-900">
                   {selectedReview.metrics?.performanceCount || 0}
                 </span>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400 flex items-center gap-1.5">
-                  <Flame className="w-3.5 h-3.5 text-purple-400" /> Smells
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <span className="text-slate-600 flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 text-brand-lavender" /> Smells
                 </span>
-                <span className="font-bold text-white">
+                <span className="font-bold text-slate-900">
                   {selectedReview.metrics?.smellsCount || 0}
                 </span>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-sky-400" /> Architecture
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <span className="text-slate-600 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-brand-blue" /> Architecture
                 </span>
-                <span className="font-bold text-white">
+                <span className="font-bold text-slate-900">
                   {selectedReview.metrics?.maintainabilityCount || 0}
                 </span>
               </div>
@@ -664,27 +664,27 @@ export default function CodeReviewPage() {
 
           {/* Issue Cards Section */}
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
               <div>
-                <h3 className="text-base font-bold font-mono text-white flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                <h3 className="text-base font-bold font-mono text-slate-900 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
                   <span>Flagged Findings ({selectedReview.issues?.length || 0})</span>
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500">
                   Strictly validated issues categorized by severity and vulnerability classification
                 </p>
               </div>
 
               {/* Filter Pills */}
-              <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800 text-[11px] font-mono">
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200 text-[11px] font-mono">
                 {["all", "security", "bug", "performance", "code_smell"].map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setActiveTabFilter(cat)}
                     className={`px-2.5 py-1 rounded-md capitalize transition-colors ${
                       activeTabFilter === cat
-                        ? "bg-slate-800 text-white font-semibold"
-                        : "text-slate-400 hover:text-slate-200"
+                        ? "bg-white text-slate-900 font-semibold shadow-sm"
+                        : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
                     {cat === "code_smell" ? "Smells" : cat}
@@ -695,10 +695,10 @@ export default function CodeReviewPage() {
 
             {/* Issues List */}
             {filteredIssues.length === 0 ? (
-              <Card className="p-8 text-center space-y-3 bg-[#0C101A]">
-                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
-                <h4 className="text-sm font-bold font-mono text-white">No Issues in this Category</h4>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              <Card className="p-8 text-center space-y-3 bg-white border-slate-200">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
+                <h4 className="text-sm font-bold font-mono text-slate-900">No Issues in this Category</h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   No findings matched the selected filter. The code complies with active safety rules.
                 </p>
               </Card>
@@ -721,8 +721,8 @@ export default function CodeReviewPage() {
                       key={issue.id || idx}
                       className={`rounded-xl border transition-all duration-200 overflow-hidden ${
                         isExpanded
-                          ? "bg-[#0E1322] border-sky-500/40 shadow-lg shadow-sky-500/5"
-                          : "bg-[#0C101A] border-slate-800/90 hover:border-slate-700"
+                          ? "bg-white border-brand-lavender/60 shadow-card-hover ring-1 ring-brand-lavender/30"
+                          : "bg-white border-slate-200 hover:border-slate-300"
                       }`}
                     >
                       {/* Clickable Card Header */}
@@ -733,21 +733,21 @@ export default function CodeReviewPage() {
                         <div className="flex items-center gap-3">
                           <button
                             type="button"
-                            className="p-1 rounded text-slate-400 hover:text-white transition-colors"
+                            className="p-1 rounded text-slate-400 hover:text-slate-700 transition-colors"
                           >
                             <ChevronDown
                               className={`w-4 h-4 transition-transform duration-200 ${
-                                isExpanded ? "rotate-180 text-sky-400" : ""
+                                isExpanded ? "rotate-180 text-brand-lavender" : ""
                               }`}
                             />
                           </button>
 
                           <div className="space-y-0.5">
-                            <h4 className="text-sm font-bold font-mono text-white">
+                            <h4 className="text-sm font-bold font-mono text-slate-900">
                               {issue.title}
                             </h4>
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-slate-400">
-                              <span className="text-sky-300">
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-slate-500">
+                              <span className="text-brand-lavender font-medium">
                                 {issue.file || selectedReview.fileName}
                               </span>
                               {issue.line && (

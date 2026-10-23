@@ -425,17 +425,25 @@ export default function RepositoryPage() {
       {/* ======================================================== */}
       {/* SECTION 3: GITHUB CONNECTION CARD (Prompt Exact Spec)   */}
       {/* ======================================================== */}
+      {/* ======================================================== */}
+      {/* SECTION 3: GITHUB CONNECTION CARD                        */}
+      {/* ======================================================== */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         {/* Disconnected State Card */}
         {!githubStatus.isGithubConnected ? (
-          <Card className="p-6 rounded-2xl border-slate-800 bg-[#0C101A] shadow-xl space-y-5">
+          <Card className="p-6 rounded-2xl border-slate-200 bg-white shadow-card-sm space-y-5">
             <div className="flex items-center gap-3">
-              <Github className="w-6 h-6 text-white" />
-              <h2 className="text-base font-bold text-white font-sans tracking-tight">GitHub</h2>
+              <div className="w-10 h-10 rounded-xl bg-brand-dark flex items-center justify-center text-white">
+                <Github className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900 font-sans tracking-tight">GitHub Integration</h2>
+                <p className="text-xs text-slate-500 font-sans">Official OAuth &amp; webhook bridge</p>
+              </div>
             </div>
 
-            <p className="text-xs text-slate-400 font-sans leading-relaxed">
-              Connect your GitHub account to analyze repositories with Devra.
+            <p className="text-xs text-slate-600 font-sans leading-relaxed">
+              Connect your GitHub account to analyze repositories, automate PR reviews, and track AST telemetry with Devra.
             </p>
 
             <div>
@@ -452,30 +460,35 @@ export default function RepositoryPage() {
           </Card>
         ) : (
           /* Connected State Card */
-          <Card className="p-6 rounded-2xl border-emerald-500/30 bg-[#0C141F] shadow-xl space-y-5">
+          <Card className="p-6 rounded-2xl border-emerald-200 bg-white shadow-card-sm space-y-5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <Github className="w-6 h-6 text-white" />
-                <h2 className="text-base font-bold text-white font-sans tracking-tight flex items-center gap-1.5">
-                  GitHub Connected <span className="text-emerald-400">✓</span>
-                </h2>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-brand-dark flex items-center justify-center text-white">
+                  <Github className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900 font-sans tracking-tight flex items-center gap-1.5">
+                    GitHub Connected <span className="text-emerald-600 font-bold">✓</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 font-sans">Bi-directional synchronization active</p>
+                </div>
               </div>
 
               {githubStatus.githubAvatar && (
                 <img
                   src={githubStatus.githubAvatar}
                   alt={githubStatus.githubUsername || "GitHub"}
-                  className="w-8 h-8 rounded-full border border-slate-700 object-cover"
+                  className="w-9 h-9 rounded-full border border-slate-200 object-cover"
                 />
               )}
             </div>
 
             <div className="space-y-0.5">
-              <p className="text-sm font-mono text-slate-200 font-semibold">
+              <p className="text-sm font-mono text-slate-900 font-semibold">
                 @{githubStatus.githubUsername || "developer"}
               </p>
-              <p className="text-xs font-mono text-slate-400">
-                {displayedRepoCount} repositories
+              <p className="text-xs font-mono text-slate-500">
+                {displayedRepoCount} repositories indexed
               </p>
             </div>
 
@@ -494,7 +507,7 @@ export default function RepositoryPage() {
                 onClick={handleDisconnectGithub}
                 variant="outline"
                 size="sm"
-                className="text-rose-400 border-rose-500/20 hover:bg-rose-500/10 text-xs"
+                className="text-rose-600 border-rose-200 hover:bg-rose-50 text-xs"
               >
                 Disconnect
               </Button>
@@ -503,18 +516,21 @@ export default function RepositoryPage() {
         )}
 
         {/* Quick Add Custom Codebase Card */}
-        <Card className="p-6 rounded-2xl border-slate-800 bg-[#0C101A] shadow-xl space-y-5">
+        <Card className="p-6 rounded-2xl border-slate-200 bg-white shadow-card-sm space-y-5">
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
-              <Plus className="w-3.5 h-3.5" />
+            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-brand-blue">
+              <Plus className="w-5 h-5" />
             </div>
-            <h2 className="text-base font-bold text-white font-sans tracking-tight">
-              Add Custom Repository
-            </h2>
+            <div>
+              <h2 className="text-base font-bold text-slate-900 font-sans tracking-tight">
+                Add Custom Repository
+              </h2>
+              <p className="text-xs text-slate-500 font-sans">Monorepo, local directory, or remote git</p>
+            </div>
           </div>
 
-          <p className="text-xs text-slate-400 font-sans leading-relaxed">
-            Link any git remote, local repo, or monorepo path directly for offline AST scanning.
+          <p className="text-xs text-slate-600 font-sans leading-relaxed">
+            Link any git remote, enterprise repository, or local workspace directly for offline AST scanning and architecture intelligence.
           </p>
 
           <div>
@@ -538,11 +554,11 @@ export default function RepositoryPage() {
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5 font-sans">
-              <FolderGit2 className="w-6 h-6 text-sky-400" />
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2.5 font-sans">
+              <FolderGit2 className="w-6 h-6 text-brand-lavender" />
               <span>Repositories</span>
             </h2>
-            <p className="text-xs text-slate-400 font-sans">
+            <p className="text-xs text-slate-500 font-sans">
               {filteredRepos.length} of {repositories.length} codebases configured for automated AST analysis &amp; reviews
             </p>
           </div>
@@ -566,21 +582,21 @@ export default function RepositoryPage() {
         </div>
 
         {/* Search, Filter & Sort Bar */}
-        <div className="p-4 rounded-xl bg-[#0C101A] border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3.5">
+        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-card-sm flex flex-col md:flex-row md:items-center justify-between gap-3.5">
           {/* Search Box */}
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by repo name, owner, or description..."
-              className="w-full pl-9 pr-3.5 py-2 rounded-lg bg-[#080B11] border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 font-mono transition-colors"
+              className="w-full pl-9 pr-3.5 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-lavender focus:bg-white font-mono transition-colors"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-2.5 text-slate-500 hover:text-slate-300"
+                className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -590,13 +606,13 @@ export default function RepositoryPage() {
           {/* Filters & Sorting */}
           <div className="flex items-center gap-2.5 flex-wrap">
             {/* Visibility Filter */}
-            <div className="flex items-center gap-1 bg-[#080B11] border border-slate-800 rounded-lg p-1 text-xs font-mono">
+            <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-lg p-1 text-xs font-mono">
               <button
                 onClick={() => setVisibilityFilter("all")}
                 className={`px-2.5 py-1 rounded-md text-[11px] transition-colors ${
                   visibilityFilter === "all"
-                    ? "bg-slate-800 text-white font-semibold"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-white text-slate-900 font-semibold shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 All
@@ -605,8 +621,8 @@ export default function RepositoryPage() {
                 onClick={() => setVisibilityFilter("public")}
                 className={`px-2.5 py-1 rounded-md text-[11px] transition-colors ${
                   visibilityFilter === "public"
-                    ? "bg-slate-800 text-white font-semibold"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-white text-slate-900 font-semibold shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 Public
@@ -615,8 +631,8 @@ export default function RepositoryPage() {
                 onClick={() => setVisibilityFilter("private")}
                 className={`px-2.5 py-1 rounded-md text-[11px] transition-colors ${
                   visibilityFilter === "private"
-                    ? "bg-slate-800 text-white font-semibold"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-white text-slate-900 font-semibold shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 Private
@@ -627,7 +643,7 @@ export default function RepositoryPage() {
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="px-2.5 py-2 rounded-lg bg-[#080B11] border border-slate-800 text-xs text-slate-300 font-mono focus:outline-none focus:border-sky-500"
+              className="px-2.5 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 font-mono focus:outline-none focus:border-brand-lavender"
             >
               <option value="all">All Languages</option>
               <option value="TypeScript">TypeScript</option>
@@ -641,7 +657,7 @@ export default function RepositoryPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-2.5 py-2 rounded-lg bg-[#080B11] border border-slate-800 text-xs text-slate-300 font-mono focus:outline-none focus:border-sky-500"
+              className="px-2.5 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 font-mono focus:outline-none focus:border-brand-lavender"
             >
               <option value="updated">Recently Updated</option>
               <option value="stars">Most Stars</option>
@@ -653,7 +669,7 @@ export default function RepositoryPage() {
 
         {/* Error State Banner */}
         {error && (
-          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs font-mono text-rose-400 flex items-center justify-between">
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs font-mono text-rose-600 flex items-center justify-between">
             <span className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
@@ -670,36 +686,36 @@ export default function RepositoryPage() {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="p-5 rounded-2xl bg-[#0C101A] border border-slate-800/80 space-y-4 animate-pulse"
+                className="p-5 rounded-2xl bg-white border border-slate-200 space-y-4 animate-pulse shadow-card-sm"
               >
                 <div className="flex items-start justify-between">
                   <div className="space-y-2 flex-1 pr-4">
-                    <div className="h-4 bg-slate-800 rounded w-3/4"></div>
-                    <div className="h-3 bg-slate-900 rounded w-1/2"></div>
+                    <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                    <div className="h-3 bg-slate-100 rounded w-1/2"></div>
                   </div>
-                  <div className="w-12 h-5 bg-slate-800 rounded-full"></div>
+                  <div className="w-12 h-5 bg-slate-200 rounded-full"></div>
                 </div>
                 <div className="space-y-1.5 pt-2">
-                  <div className="h-3 bg-slate-900 rounded w-full"></div>
-                  <div className="h-3 bg-slate-900 rounded w-4/5"></div>
+                  <div className="h-3 bg-slate-100 rounded w-full"></div>
+                  <div className="h-3 bg-slate-100 rounded w-4/5"></div>
                 </div>
-                <div className="pt-4 border-t border-slate-800/60 flex justify-between">
-                  <div className="h-3 bg-slate-800 rounded w-24"></div>
-                  <div className="h-3 bg-slate-800 rounded w-16"></div>
+                <div className="pt-4 border-t border-slate-100 flex justify-between">
+                  <div className="h-3 bg-slate-200 rounded w-24"></div>
+                  <div className="h-3 bg-slate-200 rounded w-16"></div>
                 </div>
               </div>
             ))}
           </div>
         ) : filteredRepos.length === 0 ? (
           /* Empty State */
-          <div className="p-12 text-center rounded-2xl border border-dashed border-slate-800 bg-[#0A0E16] space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mx-auto">
+          <div className="p-12 text-center rounded-2xl border border-dashed border-slate-300 bg-white space-y-4">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 mx-auto">
               <FolderGit2 className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-white font-sans">
+            <h3 className="text-base font-bold text-slate-900 font-sans">
               {searchQuery ? "No matching repositories found" : "No repositories connected yet"}
             </h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto font-sans leading-relaxed">
+            <p className="text-xs text-slate-500 max-w-sm mx-auto font-sans leading-relaxed">
               {searchQuery
                 ? `No codebases matched "${searchQuery}". Try adjusting your search query, language, or visibility filter.`
                 : "Connect your GitHub account or add custom repositories to begin automated architecture telemetry."}
@@ -722,7 +738,7 @@ export default function RepositoryPage() {
             </div>
           </div>
         ) : (
-          /* Repositories Cards Grid */
+          /* Repositories Cards Grid (Clean white cards with subtle borders) */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredRepos.map((repo) => {
               const isSelected = activeRepo === repo.name;
@@ -736,8 +752,8 @@ export default function RepositoryPage() {
                   onClick={() => navigate(`/repositories/${repo._id}`)}
                   className={`cursor-pointer transition-all space-y-4 relative group flex flex-col justify-between ${
                     isSelected
-                      ? "border-sky-500/50 bg-[#0E1524] shadow-md shadow-sky-500/5"
-                      : "bg-[#0C101A]"
+                      ? "border-brand-lavender/60 bg-white shadow-card-hover ring-1 ring-brand-lavender/40"
+                      : "bg-white"
                   }`}
                 >
                   <div className="space-y-3">
@@ -749,28 +765,28 @@ export default function RepositoryPage() {
                             <img
                               src={repo.owner.avatarUrl}
                               alt=""
-                              className="w-4 h-4 rounded-full object-cover shrink-0 border border-slate-700"
+                              className="w-4 h-4 rounded-full object-cover shrink-0 border border-slate-200"
                             />
                           ) : (
                             <span
                               className="w-2.5 h-2.5 rounded-full shrink-0"
-                              style={{ backgroundColor: repo.languageColor || "#38bdf8" }}
+                              style={{ backgroundColor: repo.languageColor || "#8B7CFF" }}
                             ></span>
                           )}
 
-                          <h3 className="text-sm font-bold font-mono text-white group-hover:text-sky-400 transition-colors truncate">
+                          <h3 className="text-sm font-bold font-mono text-slate-900 group-hover:text-brand-lavender transition-colors truncate">
                             {repo.name}
                           </h3>
 
                           {isSelected && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shrink-0"></span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-brand-lavender animate-pulse shrink-0"></span>
                           )}
                         </div>
 
                         <p className="text-[11px] font-mono text-slate-500 truncate flex items-center gap-1.5">
                           <span>{repo.owner?.login || "devra"}</span>
                           <span>/</span>
-                          <span className="text-slate-400">{repo.name}</span>
+                          <span className="text-slate-700 font-medium">{repo.name}</span>
                         </p>
                       </div>
 
@@ -790,49 +806,49 @@ export default function RepositoryPage() {
                           )}
                         </Badge>
 
-                        <Badge variant={repo.health > 92 ? "emerald" : "cyan"} size="sm">
+                        <Badge variant={repo.health > 92 ? "emerald" : "blue"} size="sm">
                           {repo.health}%
                         </Badge>
                       </div>
                     </div>
 
                     {/* Description */}
-                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed font-sans">
+                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-sans">
                       {repo.description || "Continuous architecture review and AST telemetry active."}
                     </p>
 
                     {/* Metadata Row: Language, Last Updated & External Link */}
-                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-1">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 pt-1">
                       <div className="flex items-center gap-1.5">
                         <span
                           className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: repo.languageColor || "#38bdf8" }}
+                          style={{ backgroundColor: repo.languageColor || "#8B7CFF" }}
                         ></span>
-                        <span className="text-slate-300">{repo.language || "TypeScript"}</span>
+                        <span className="text-slate-700 font-medium">{repo.language || "TypeScript"}</span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-slate-500 text-[10px]">
-                        <Clock className="w-3 h-3 text-slate-600" />
+                      <div className="flex items-center gap-2 text-slate-400 text-[10px]">
+                        <Clock className="w-3 h-3 text-slate-400" />
                         <span>{formatDate(repo.lastUpdated)}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Card Footer: Stars, Forks, Branch & External Link */}
-                  <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-500">
                     <div className="flex items-center gap-3">
                       <span className="flex items-center gap-1" title="Stars">
-                        <Star className="w-3 h-3 text-amber-400 fill-amber-400/20" />
+                        <Star className="w-3 h-3 text-amber-500 fill-amber-500/20" />
                         <span>{repo.stars || 0}</span>
                       </span>
 
                       <span className="flex items-center gap-1" title="Forks">
-                        <GitFork className="w-3 h-3 text-slate-500" />
+                        <GitFork className="w-3 h-3 text-slate-400" />
                         <span>{repo.forks || 0}</span>
                       </span>
 
-                      <span className="flex items-center gap-1 text-slate-300" title="Active Branch">
-                        <GitBranch className="w-3 h-3 text-slate-500" />
+                      <span className="flex items-center gap-1 text-slate-700" title="Active Branch">
+                        <GitBranch className="w-3 h-3 text-slate-400" />
                         <span className="truncate max-w-[80px]">
                           {repo.defaultBranch || repo.activeBranch || "main"}
                         </span>
@@ -847,7 +863,7 @@ export default function RepositoryPage() {
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
                           title="View on GitHub"
-                          className="text-slate-500 hover:text-white transition-colors p-1"
+                          className="text-slate-400 hover:text-slate-700 transition-colors p-1"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>

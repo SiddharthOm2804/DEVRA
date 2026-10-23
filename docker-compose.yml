@@ -4,7 +4,8 @@ services:
     container_name: devpilot-mongo
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      # Secure host binding: Restricted to local loopback (127.0.0.1) to prevent network-wide exposure
+      - "127.0.0.1:27017:27017"
     volumes:
       - devpilot-data:/data/db
     environment:
@@ -23,7 +24,8 @@ services:
     container_name: devpilot-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      # Secure host binding: Restricted to local loopback (127.0.0.1) to prevent network-wide exposure
+      - "127.0.0.1:6379:6379"
     volumes:
       - devpilot-redis-data:/data
     healthcheck:
@@ -34,6 +36,7 @@ services:
       start_period: 3s
     networks:
       - devpilot-network
+
 
   server:
     build:
@@ -51,11 +54,19 @@ services:
       - REDIS_PORT=6379
       - VECTOR_STORE=redis
       - CLIENT_URL=http://localhost:80
-      - JWT_SECRET=${JWT_SECRET:-devpilot_production_jwt_secret_32chars_key!}
-      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-devra_webhook_secret_default_2026}
+      - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in the root .env file before starting Docker Compose}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:?Set GITHUB_WEBHOOK_SECRET in the root .env file before starting Docker Compose}
       - METRICS_AUTH_TOKEN=${METRICS_AUTH_TOKEN:-}
       - AI_PROVIDER=${AI_PROVIDER:-gemini}
       - AI_API_KEY=${AI_API_KEY:-}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - GITHUB_CALLBACK_URL=${GITHUB_CALLBACK_URL:-http://localhost:5000/api/auth/github/callback}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - EMAIL_FROM=${EMAIL_FROM:-no-reply@devra.local}
     depends_on:
       mongodb:
         condition: service_healthy

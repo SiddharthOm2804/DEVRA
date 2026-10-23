@@ -20,7 +20,7 @@ import {
   Radio,
   Activity
 } from "lucide-react";
-import { agentApi } from "../../services/api";
+import { agentApi, authApi } from "../../services/api";
 import Card from "../ui/Card";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
@@ -65,24 +65,35 @@ export default function AgentModePanel({ repositoryId, repositoryName }) {
       closeEventStream();
     }
     return () => {
-      closeEventStream();
+      closeEventStream(false);
     };
   }, [session?._id, session?.status]);
 
-  const closeEventStream = () => {
+  const closeEventStream = (updateStatus = true) => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
-      setStreamStatus("idle");
+      if (updateStatus) setStreamStatus("idle");
     }
   };
 
-  const initEventStream = (sessionId) => {
+  const initEventStream = async (sessionId) => {
     closeEventStream();
 
     try {
       setStreamStatus("connected");
+      let ticket = "";
+      try {
+        const ticketRes = await authApi.getStreamTicket();
+        if (ticketRes?.ticket) {
+          ticket = ticketRes.ticket;
+        }
+      } catch (tErr) {
+        // Fallback gracefully if ticket endpoint unavailable
+      }
+
       const es = agentApi.createEventStream(sessionId, {
+        ticket,
         onOpen: () => {
           setStreamStatus("streaming");
         },
@@ -122,7 +133,10 @@ export default function AgentModePanel({ repositoryId, repositoryName }) {
           }
         },
         onError: () => {
-          // Graceful fallback: mark streaming as fallback, don't crash UI
+          // EventSource retries failed connections automatically; close it so
+          // polling fallback does not leave a reconnect loop running.
+          es.close();
+          if (eventSourceRef.current === es) eventSourceRef.current = null;
           setStreamStatus("fallback");
         }
       });
@@ -295,54 +309,54 @@ export default function AgentModePanel({ repositoryId, repositoryName }) {
       )}
 
       {/* Hero Banner: AI Agent Mode */}
-      <Card className="bg-gradient-to-r from-[#0C101A] via-[#101726] to-[#0C101A] border-slate-800 space-y-4">
+      <Card className="bg-white border-slate-200 shadow-card-sm space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-brand-lavender">
                 <Bot className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-bold font-mono text-white flex items-center gap-2">
+              <h2 className="text-lg font-bold font-mono text-slate-900 flex items-center gap-2">
                 <span>Devra Autonomous Agent Mode</span>
-                <Badge variant="cyan" size="sm">Human-in-the-Loop</Badge>
+                <Badge variant="blue" size="sm">Human-in-the-Loop</Badge>
               </h2>
             </div>
-            <p className="text-xs text-slate-400 max-w-2xl">
+            <p className="text-xs text-slate-600 max-w-2xl">
               Provide a high-level feature request or refactoring goal. Devra will analyze the repository, synthesize an implementation plan, show diffs, and await your approval before applying changes.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-mono text-slate-400 bg-slate-900/80 px-3 py-2 rounded-lg border border-slate-800">
-            <Shield className="w-4 h-4 text-emerald-400" />
+          <div className="flex items-center gap-2 text-xs font-mono text-slate-600 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+            <Shield className="w-4 h-4 text-emerald-600" />
             <span>Non-destructive &bull; Reversible</span>
           </div>
         </div>
 
         {/* Safeguard Metrics Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-800/80 text-xs font-mono">
-          <div className="flex items-center gap-2 text-slate-300">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-100 text-xs font-mono">
+          <div className="flex items-center gap-2 text-slate-700">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>Zero Silent Edits</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-300">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="flex items-center gap-2 text-slate-700">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>Reversible Snapshots</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-300">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="flex items-center gap-2 text-slate-700">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>Zero Secrets Injected</span>
           </div>
-          <div className="flex items-center gap-2 text-slate-300">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="flex items-center gap-2 text-slate-700">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>User Explicit Approval</span>
           </div>
         </div>
       </Card>
 
       {/* Goal Input Section */}
-      <Card className="bg-[#0C101A] border-slate-800 space-y-4">
+      <Card className="bg-white border-slate-200 shadow-card-sm space-y-4">
         <div>
-          <label className="text-xs font-bold font-mono text-white block mb-1">
+          <label className="text-xs font-bold font-mono text-slate-900 block mb-1">
             DEVELOPMENT REQUEST / FEATURE GOAL
           </label>
           <div className="flex gap-2">
@@ -353,7 +367,7 @@ export default function AgentModePanel({ repositoryId, repositoryName }) {
               onKeyDown={(e) => e.key === "Enter" && handleStartPlanning()}
               placeholder="e.g., Add forgot password functionality, or Add JWT refresh token rotation"
               disabled={loading}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-slate-900/90 border border-slate-700 text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-sky-400 transition-colors"
+              className="flex-1 px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-sm font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-lavender focus:bg-white transition-colors"
             />
             <Button
               onClick={() => handleStartPlanning()}

@@ -130,6 +130,9 @@ const analysisSchema = new mongoose.Schema(
       default: []
     },
     summary: {
+      source: { type: String, default: null },
+      lineCountComplete: { type: Boolean, default: false },
+      repositoryFileCount: { type: Number, default: null },
       primaryLanguage: { type: String, default: "TypeScript" },
       architecturePattern: { type: String, default: "Modular Monorepo / Layered Architecture" },
       status: { type: String, default: "complete" }

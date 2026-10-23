@@ -78,6 +78,7 @@ export async function runRbacTests() {
 
     assert.strictEqual(hasPermission(ROLES.DEVELOPER, PERMISSIONS.AGENT_PLAN), true);
     assert.strictEqual(hasPermission(ROLES.DEVELOPER, PERMISSIONS.AGENT_APPLY), true);
+    assert.strictEqual(hasPermission(ROLES.DEVELOPER, PERMISSIONS.ANALYSIS_TRIGGER), true);
     assert.strictEqual(hasPermission(ROLES.DEVELOPER, PERMISSIONS.USER_MANAGE), false);
     assert.strictEqual(hasPermission(ROLES.DEVELOPER, PERMISSIONS.REPO_DELETE), false);
 

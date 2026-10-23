@@ -5,7 +5,7 @@ export default function Card({
   className = "",
   hover = false,
   padding = "md",
-  glow = false,
+  dark = false,
   ...props
 }) {
   const paddingStyles = {
@@ -16,16 +16,18 @@ export default function Card({
   };
 
   const hoverStyles = hover
-    ? "hover:border-violet-500/40 hover:shadow-xl hover:shadow-violet-950/20 hover:-translate-y-0.5 transition-all duration-200"
+    ? dark
+      ? "hover:border-abyssal-jade/60 hover:shadow-card-jade transition-all duration-200"
+      : "hover:border-abyssal-borderLight hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
     : "";
 
-  const glowStyles = glow
-    ? "border-violet-500/30 shadow-lg shadow-violet-950/30 bg-gradient-to-b from-[#0F1426] to-[#0A0D18]"
-    : "bg-[#0A0E1A]/90 border-slate-800/80";
+  const themeStyles = dark
+    ? "bg-abyssal-card border border-abyssal-border text-abyssal-ivory shadow-card"
+    : "bg-abyssal-card border border-abyssal-border text-abyssal-ivory shadow-card-sm";
 
   return (
     <div
-      className={`border rounded-xl text-slate-100 backdrop-blur-md shadow-glass-inner ${paddingStyles[padding] || paddingStyles.md} ${glowStyles} ${hoverStyles} ${className}`}
+      className={`rounded-xl ${themeStyles} ${paddingStyles[padding] || paddingStyles.md} ${hoverStyles} ${className}`}
       {...props}
     >
       {children}

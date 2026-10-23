@@ -1,19 +1,31 @@
 import User from "../models/User.js";
 import { verifyToken } from "../utils/jwt.js";
+import { ticketStore } from "../utils/ticketStore.js";
 
 /**
- * Protect routes - Verifies JWT Bearer token and attaches user to request
+ * Protect routes - Verifies JWT Bearer token or short-lived single-use ticket and attaches user to request
  */
 export const protect = async (req, res, next) => {
   let token;
+  let isFromTicket = false;
 
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
-  } else if (req.query && req.query.token) {
-    token = req.query.token;
+  } else if (req.query && req.query.ticket) {
+    // F-009: Consume short-lived single-use ticket for SSE / URL-constrained clients
+    const ticketPayload = ticketStore.consumeTicket(req.query.ticket);
+    if (ticketPayload && ticketPayload.token) {
+      token = ticketPayload.token;
+      isFromTicket = true;
+    } else {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid, expired, or already-consumed stream ticket."
+      });
+    }
   }
 
   if (!token) {
