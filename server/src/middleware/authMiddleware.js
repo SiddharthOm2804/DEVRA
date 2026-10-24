@@ -15,8 +15,8 @@ export const protect = async (req, res, next) => {
   ) {
     token = req.headers.authorization.split(" ")[1];
   } else if (req.query && req.query.ticket) {
-    // F-009: Consume short-lived single-use ticket for SSE / URL-constrained clients
-    const ticketPayload = ticketStore.consumeTicket(req.query.ticket);
+    // F-009: Consume short-lived single-use ticket for SSE / URL-constrained clients atomically
+    const ticketPayload = await ticketStore.consumeTicketAsync(req.query.ticket);
     if (ticketPayload && ticketPayload.token) {
       token = ticketPayload.token;
       isFromTicket = true;

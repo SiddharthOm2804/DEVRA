@@ -613,7 +613,7 @@ export const exchangeTicket = async (req, res, next) => {
       });
     }
 
-    const payload = ticketStore.consumeTicket(ticket);
+    const payload = await ticketStore.consumeTicketAsync(ticket);
     if (!payload || !payload.token) {
       return res.status(401).json({
         success: false,

@@ -53,9 +53,63 @@ class TicketStore {
   }
 
   /**
-   * Consume a single-use ticket. Returns payload if valid, not expired, and unused.
+   * Consume a single-use ticket asynchronously with guaranteed atomicity across distributed instances.
+   * Uses Redis GETDEL (or atomic Lua get-and-delete) so only one concurrent request can ever redeem the ticket.
+   * If Redis is not connected, safely falls back to atomic local Map deletion.
+   * @param {string} ticketId
+   * @returns {Promise<Object|null>}
+   */
+  async consumeTicketAsync(ticketId) {
+    if (!ticketId || typeof ticketId !== "string") {
+      return null;
+    }
+
+    if (isRedisAvailable()) {
+      try {
+        const client = getRedisClient();
+        const key = `devra:ticket:${ticketId}`;
+        let raw = null;
+
+        // Redis 6.2+ supports GETDEL directly; fallback to Lua script for earlier versions
+        if (typeof client.getdel === "function") {
+          raw = await client.getdel(key);
+        } else {
+          const luaGetDel = `
+            local val = redis.call('GET', KEYS[1])
+            if val then
+              redis.call('DEL', KEYS[1])
+            end
+            return val
+          `;
+          raw = await client.eval(luaGetDel, 1, key);
+        }
+
+        // Also clean up local in-memory mirror if present
+        this.tickets.delete(ticketId);
+
+        if (!raw) {
+          return null;
+        }
+
+        const entry = JSON.parse(raw);
+        if (!entry || entry.used || (entry.expiresAt && Date.now() > entry.expiresAt)) {
+          return null;
+        }
+
+        return entry.payload;
+      } catch (err) {
+        logger.warn(`[TicketStore] Redis atomic consume error, falling back to local memory: ${err.message}`);
+      }
+    }
+
+    // In-memory atomic consumption (single process / dev fallback)
+    return this.consumeTicket(ticketId);
+  }
+
+  /**
+   * Consume a single-use ticket synchronously.
    * Immediately burns the ticket (single-use replay resistance).
-   * Works synchronously with in-memory map and executes atomic Redis DEL when available.
+   * Works with in-memory map and triggers atomic Redis deletion.
    * @param {string} ticketId 
    * @returns {Object|null}
    */

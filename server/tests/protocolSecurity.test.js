@@ -120,6 +120,22 @@ export async function runProtocolSecurityTests() {
     assert.strictEqual(replay, null, "Ticket must not be reusable");
   });
 
+  asyncTest("F-009: TicketStore atomic consumeTicketAsync prevents concurrent replay", async () => {
+    const dummyPayload = { token: "secret_jwt_token_async", userId: "user_789" };
+    const ticketId = ticketStore.createTicket(dummyPayload, 5000);
+
+    // Simulate concurrent redemption attempts across async workers/requests
+    const [result1, result2, result3] = await Promise.all([
+      ticketStore.consumeTicketAsync(ticketId),
+      ticketStore.consumeTicketAsync(ticketId),
+      ticketStore.consumeTicketAsync(ticketId)
+    ]);
+
+    const successes = [result1, result2, result3].filter((r) => r !== null);
+    assert.strictEqual(successes.length, 1, "Exactly one concurrent consumer must redeem the ticket");
+    assert.deepStrictEqual(successes[0], dummyPayload);
+  });
+
   test("F-009: TicketStore rejects expired tickets", () => {
     const ticketId = ticketStore.createTicket({ token: "expired_token" }, -10); // already expired
     const result = ticketStore.consumeTicket(ticketId);

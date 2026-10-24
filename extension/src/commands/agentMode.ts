@@ -232,13 +232,15 @@ export async function agentModeCommand(): Promise<void> {
 
             try {
               for (const change of currentSession.proposedChanges) {
-                // Path traversal safeguard
+                // Comprehensive path traversal and escape safeguard
                 const normalizedPath = change.filePath.replace(/\\/g, "/");
                 if (
                   normalizedPath.startsWith("/") ||
                   normalizedPath.startsWith("../") ||
                   normalizedPath.includes("/../") ||
-                  normalizedPath === ".."
+                  normalizedPath === ".." ||
+                  /^[a-zA-Z]:/.test(normalizedPath) ||
+                  normalizedPath.startsWith("//")
                 ) {
                   throw new Error(`Path traversal rejected: ${change.filePath} is outside workspace bounds.`);
                 }
