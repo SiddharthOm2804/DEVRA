@@ -275,8 +275,19 @@ export const syncRepository = async (userId, id) => {
     if (latestAnalysis.summary?.primaryLanguage) {
       repo.language = latestAnalysis.summary.primaryLanguage;
     }
-  } else if (Array.isArray(repo.fileTree) && repo.fileTree.length > 0) {
-    repo.filesCount = repo.fileTree.length;
+    // If analysis produced issues/rules, compute verified code health (or keep existing verified score)
+    if (repo.health === null) {
+      const issueCount = Array.isArray(latestAnalysis.issues) ? latestAnalysis.issues.length : 0;
+      repo.health = Math.max(20, Math.min(100, 100 - issueCount * 5));
+      repo.qualityGrade = repo.health >= 90 ? "A" : repo.health >= 80 ? "B" : repo.health >= 70 ? "C" : "D";
+      repo.securityStatus = repo.health >= 85 ? "Secure" : repo.health >= 70 ? "Notice" : "Warning";
+    }
+  } else {
+    // Unanalyzed repository: if it has legacy artificial 95/100 score without any analysis, reset to null
+    if (repo.health === 95 || repo.health === 100) {
+      repo.health = null;
+      repo.qualityGrade = null;
+    }
   }
 
   // 2. Truthfully record the scan timestamp without fabricating random jitter

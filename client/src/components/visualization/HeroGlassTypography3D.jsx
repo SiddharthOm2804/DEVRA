@@ -124,6 +124,16 @@ function GlassTypography3D({ scrollProgress = 0, mousePos = { x: 0, y: 0 } }) {
     });
   }, []);
 
+  // Clean up TubeGeometries and MeshPhysicalMaterial on unmount
+  useEffect(() => {
+    return () => {
+      letterGeometries.forEach((letter) => {
+        if (letter.geo) letter.geo.dispose();
+      });
+      if (glassMaterial) glassMaterial.dispose();
+    };
+  }, [letterGeometries, glassMaterial]);
+
   // Frame animation: gentle breathing, mouse parallax, scroll fading
   useFrame((state, delta) => {
     if (!groupRef.current) return;

@@ -806,9 +806,15 @@ export default function RepositoryPage() {
                           )}
                         </Badge>
 
-                        <Badge variant={repo.health > 92 ? "emerald" : "blue"} size="sm">
-                          {repo.health}%
-                        </Badge>
+                        {typeof repo.health === "number" && !isNaN(repo.health) ? (
+                          <Badge variant={repo.health > 92 ? "emerald" : "blue"} size="sm">
+                            {repo.health}%
+                          </Badge>
+                        ) : (
+                          <Badge variant="neutral" size="sm">
+                            Unanalyzed
+                          </Badge>
+                        )}
                       </div>
                     </div>
 

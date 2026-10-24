@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,15 +29,17 @@ import {
   Server
 } from "lucide-react";
 import Navbar from "../components/Navbar";
-import HeroGlassTypography3D from "../components/visualization/HeroGlassTypography3D";
-import HeroCodebase3D from "../components/visualization/HeroCodebase3D";
-import Codebase3DShowcase from "../components/visualization/Codebase3DShowcase";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
 import CodeSnippet from "../components/ui/CodeSnippet";
 import DevraLogo from "../components/ui/DevraLogo";
 import { checkHealth } from "../services/api";
+
+// Lazy-load 3D Three.js components so initial bundle remains ultralight
+const HeroGlassTypography3D = lazy(() => import("../components/visualization/HeroGlassTypography3D"));
+const HeroCodebase3D = lazy(() => import("../components/visualization/HeroCodebase3D"));
+const Codebase3DShowcase = lazy(() => import("../components/visualization/Codebase3DShowcase"));
 
 export default function LandingPage() {
   const [serverHealth, setServerHealth] = useState({ status: "checking" });
@@ -134,7 +136,9 @@ export const requireAuth = (req, res, next) => {
             ================================================== */}
         <section id="hero" className="relative overflow-hidden bg-abyssal-dark py-20 sm:py-28 border-b border-abyssal-border">
           {/* Signature 3D Translucent Glass Typography suspended in Abyssal Jade environment */}
-          <HeroGlassTypography3D />
+          <Suspense fallback={<div className="h-40 w-full" />}>
+            <HeroGlassTypography3D />
+          </Suspense>
 
           {/* Subtle architectural grid pattern */}
           <div className="absolute inset-0 bg-devra-grid-dark opacity-35 pointer-events-none" />
@@ -244,7 +248,9 @@ export const requireAuth = (req, res, next) => {
                   </div>
 
                   {/* 3D Codebase Canvas */}
-                  <HeroCodebase3D />
+                  <Suspense fallback={<div className="h-[500px] w-full flex items-center justify-center bg-brand-dark text-slate-500 font-mono text-xs">Loading spatial engine...</div>}>
+                    <HeroCodebase3D />
+                  </Suspense>
                 </div>
               </motion.div>
             </div>
@@ -381,7 +387,9 @@ export const requireAuth = (req, res, next) => {
         {/* ==================================================
             5. DEDICATED 3D CODEBASE VISUALIZATION SECTION
             ================================================== */}
-        <Codebase3DShowcase />
+        <Suspense fallback={<div className="h-96 w-full flex items-center justify-center text-slate-500 font-mono text-xs">Loading 3D visualization showcase...</div>}>
+          <Codebase3DShowcase />
+        </Suspense>
 
         {/* ==================================================
             6. AI CODE REVIEW SHOWCASE SECTION

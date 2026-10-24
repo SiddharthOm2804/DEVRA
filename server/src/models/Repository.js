@@ -96,22 +96,22 @@ const repositorySchema = new mongoose.Schema(
       type: Date,
       default: Date.now
     },
-    // Platform Code Health & Architecture Metrics
+    // Platform Code Health & Architecture Metrics (null indicates unanalyzed)
     health: {
       type: Number,
       min: 0,
       max: 100,
-      default: 95
+      default: null
     },
     qualityGrade: {
       type: String,
-      enum: ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F"],
-      default: "A+"
+      enum: ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D", "F", null],
+      default: null
     },
     securityStatus: {
       type: String,
       enum: ["Secure", "Notice", "Warning", "Critical"],
-      default: "Secure"
+      default: "Notice"
     },
     lastScanned: {
       type: Date,

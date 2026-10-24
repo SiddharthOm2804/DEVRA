@@ -151,7 +151,7 @@ export async function runProtocolSecurityTests() {
   // F-010: Synchronization & Truthful Metrics
   // ==========================================
 
-  test("F-010: formatGithubRepo assigns deterministic baseline health score (100) instead of random benchmark", () => {
+  test("F-010: formatGithubRepo assigns deterministic unanalyzed health score (null) instead of misleading score", () => {
     const mockGithubRepo = {
       id: 12345,
       name: "verified-repo",
@@ -163,8 +163,8 @@ export async function runProtocolSecurityTests() {
     const formatted1 = formatGithubRepo(mockGithubRepo);
     const formatted2 = formatGithubRepo(mockGithubRepo);
 
-    assert.strictEqual(formatted1.health, 100);
-    assert.strictEqual(formatted2.health, 100);
+    assert.strictEqual(formatted1.health, null, "Unanalyzed repository must have health null");
+    assert.strictEqual(formatted2.health, null, "Unanalyzed repository must have health null");
     assert.strictEqual(formatted1.health, formatted2.health, "Health score must be deterministic without Math.random()");
   });
 
@@ -199,6 +199,20 @@ export async function runProtocolSecurityTests() {
       assert.strictEqual(updated.health, initialHealth, "health score must remain truthful without random fluctuation");
       assert.strictEqual(updated.filesCount, 15, "filesCount updated truthfully from AST analysis");
       assert.ok(updated.lastScanned.getTime() > 0, "lastScanned truthfully updated");
+
+      // Test unanalyzed legacy repo resets to null truthfully
+      const legacyUnanalyzed = {
+        _id: "64f1a2b3c4d5e6f7a8b9c0d3",
+        userId: "64f1a2b3c4d5e6f7a8b9c0d2",
+        commitCount: 10,
+        health: 95,
+        save: async function () { return this; }
+      };
+      Repository.findOne = async () => legacyUnanalyzed;
+      Analysis.findOne = () => ({ sort: () => Promise.resolve(null) });
+      const resetRepo = await syncRepository(legacyUnanalyzed.userId, legacyUnanalyzed._id);
+      assert.strictEqual(resetRepo.health, null, "Unanalyzed repo with legacy default score must be reset to null");
+      assert.strictEqual(resetRepo.qualityGrade, null, "Unanalyzed repo qualityGrade must be reset to null");
     } finally {
       Repository.findOne = origFindOne;
       Analysis.findOne = origAnalysisFindOne;

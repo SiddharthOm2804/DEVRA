@@ -177,9 +177,9 @@ export const formatGithubRepo = (repo) => {
     isPrivate: !!repo.private,
     visibility: repo.private ? "private" : "public",
     lastUpdated: repo.updated_at || repo.pushed_at || new Date(),
-    health: 100, // Initial unscanned benchmark
-    qualityGrade: "A+",
-    securityStatus: "Secure"
+    health: null, // Unanalyzed until comprehensive code analysis runs
+    qualityGrade: null,
+    securityStatus: "Notice"
   };
 };
 

@@ -228,24 +228,61 @@ export async function agentModeCommand(): Promise<void> {
           const workspaceFolders = vscode.workspace.workspaceFolders;
           if (workspaceFolders && workspaceFolders.length > 0) {
             const rootUri = workspaceFolders[0].uri;
+            const appliedBackups: { uri: vscode.Uri; exists: boolean; content?: Uint8Array }[] = [];
 
-            for (const change of currentSession.proposedChanges) {
-              const fileUri = vscode.Uri.joinPath(rootUri, change.filePath);
-
-              if (change.action === "delete") {
-                try {
-                  await vscode.workspace.fs.delete(fileUri, { useTrash: true });
-                } catch {
-                  // File may not exist yet
+            try {
+              for (const change of currentSession.proposedChanges) {
+                // Path traversal safeguard
+                const normalizedPath = change.filePath.replace(/\\/g, "/");
+                if (
+                  normalizedPath.startsWith("/") ||
+                  normalizedPath.startsWith("../") ||
+                  normalizedPath.includes("/../") ||
+                  normalizedPath === ".."
+                ) {
+                  throw new Error(`Path traversal rejected: ${change.filePath} is outside workspace bounds.`);
                 }
-              } else {
-                // Ensure directory exists
-                const dirUri = vscode.Uri.joinPath(fileUri, "..");
-                await vscode.workspace.fs.createDirectory(dirUri);
 
-                const enc = new TextEncoder();
-                await vscode.workspace.fs.writeFile(fileUri, enc.encode(change.proposedContent));
+                const fileUri = vscode.Uri.joinPath(rootUri, normalizedPath);
+
+                // Preserve local backup for atomic rollback if subsequent file write fails
+                let fileExisted = false;
+                let prevContent: Uint8Array | undefined;
+                try {
+                  prevContent = await vscode.workspace.fs.readFile(fileUri);
+                  fileExisted = true;
+                } catch {
+                  fileExisted = false;
+                }
+                appliedBackups.push({ uri: fileUri, exists: fileExisted, content: prevContent });
+
+                if (change.action === "delete") {
+                  try {
+                    await vscode.workspace.fs.delete(fileUri, { useTrash: true });
+                  } catch {
+                    // File may not exist
+                  }
+                } else {
+                  const dirUri = vscode.Uri.joinPath(fileUri, "..");
+                  await vscode.workspace.fs.createDirectory(dirUri);
+                  const enc = new TextEncoder();
+                  await vscode.workspace.fs.writeFile(fileUri, enc.encode(change.proposedContent));
+                }
               }
+            } catch (applyErr: any) {
+              // Rollback files on error
+              for (const backup of appliedBackups) {
+                try {
+                  if (backup.exists && backup.content) {
+                    await vscode.workspace.fs.writeFile(backup.uri, backup.content);
+                  } else if (!backup.exists) {
+                    await vscode.workspace.fs.delete(backup.uri, { useTrash: false });
+                  }
+                } catch {
+                  // Non-blocking rollback logging
+                }
+              }
+              throw new Error(`Workspace write aborted and rolled back: ${applyErr.message}`);
             }
           }
 

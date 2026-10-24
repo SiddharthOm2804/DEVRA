@@ -125,17 +125,38 @@ export async function runThreeJsLodTests() {
     assert.strictEqual(searchedOverview.nodes.some((n) => n.id === targetFile.id), true);
   });
 
-  // 6. Empty and Partially Indexed Repositories
+  // 6. Empty and Partially Indexed Repositories & Synthetic vs Real Semantics
   await test("Empty and partially indexed repositories generate clean fallback clusters", () => {
     // Completely empty repository
     const emptyGraph = buildGraphLayout({}, {});
     assert.strictEqual(emptyGraph.nodes.length > 0, true);
     assert.strictEqual(emptyGraph.nodes.filter((n) => n.isHub).length, 5);
     assert.ok(emptyGraph.linePositions.length > 0);
+    // Real file nodes count must be 0
+    assert.strictEqual(emptyGraph.nodes.filter((n) => !n.isHub).length, 0);
+    // All overview edges in empty repo are synthetic architecture backbone edges
+    assert.ok(emptyGraph.aggregatedEdges.every((e) => e.isSynthetic === true && e.provenance === "synthetic_backbone"));
 
     // Missing files array
     const partialGraph = buildGraphLayout({ files: null }, { fileTree: [] });
     assert.strictEqual(partialGraph.nodes.length > 0, true);
+    assert.strictEqual(partialGraph.nodes.filter((n) => !n.isHub).length, 0);
+
+    // Graph with real AST relationships preserves them distinctly from synthetic backbone
+    const realAnalysis = {
+      files: [
+        { path: "src/server.ts", name: "server.ts", lines: 100 },
+        { path: "src/routes.ts", name: "routes.ts", lines: 50 }
+      ],
+      relationships: [
+        { from: "src/server.ts", to: "src/routes.ts", type: "imports" }
+      ]
+    };
+    const realGraph = buildGraphLayout(realAnalysis, { name: "real-repo" });
+    const astEdge = realGraph.edges.find((e) => e.id === "ast-src/server.ts->src/routes.ts");
+    assert.ok(astEdge, "AST relationship edge must exist");
+    assert.strictEqual(astEdge.isSynthetic, false);
+    assert.strictEqual(astEdge.provenance, "ast_analysis");
   });
 
   // 7. Edge Aggregation & Line Buffer Pre-Calculation

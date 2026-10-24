@@ -35,8 +35,9 @@ import { useAuth } from "../context/AuthContext";
 import Card from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
-import CodebaseVisualizer3D from "../components/visualization/CodebaseVisualizer3D";
 import AgentModePanel from "../components/agent/AgentModePanel";
+
+const CodebaseVisualizer3D = React.lazy(() => import("../components/visualization/CodebaseVisualizer3D"));
 
 const SOURCE_CODE_EXTENSIONS = new Set([
   "ts", "tsx", "js", "jsx", "mjs", "cjs", "py", "go", "rs", "java",
@@ -559,7 +560,9 @@ export default function RepositoryDetailsPage() {
             </div>
           </div>
 
-          <CodebaseVisualizer3D analysis={analysis} repo={repo} />
+          <React.Suspense fallback={<div className="h-96 w-full flex items-center justify-center text-slate-500 font-mono text-xs">Loading 3D Visualizer...</div>}>
+            <CodebaseVisualizer3D analysis={analysis} repo={repo} />
+          </React.Suspense>
         </div>
       )}
       {activeTab === "3d" && !hasFiles && (

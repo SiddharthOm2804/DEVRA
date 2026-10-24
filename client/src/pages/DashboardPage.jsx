@@ -35,7 +35,8 @@ import Card from "../components/ui/Card";
 import StatCard from "../components/ui/StatCard";
 import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
-import CodebaseVisualizer3D from "../components/visualization/CodebaseVisualizer3D";
+
+const CodebaseVisualizer3D = React.lazy(() => import("../components/visualization/CodebaseVisualizer3D"));
 
 export default function DashboardPage() {
   const { user, activeRepo } = useAuth();
@@ -268,15 +269,17 @@ export default function DashboardPage() {
 
         {/* Embedded 3D Scene viewport */}
         <div className="h-[460px] w-full relative bg-abyssal-dark">
-          <CodebaseVisualizer3D
-            repository={currentRepoObj}
-            analysis={activeAnalysis}
-            onSelectNode={(node) => {
-              if (node?.filePath && currentRepoObj?._id) {
-                navigate(`/repositories/${currentRepoObj._id}`);
-              }
-            }}
-          />
+          <React.Suspense fallback={<div className="h-full w-full flex items-center justify-center text-slate-500 font-mono text-xs">Loading 3D Cockpit...</div>}>
+            <CodebaseVisualizer3D
+              repository={currentRepoObj}
+              analysis={activeAnalysis}
+              onSelectNode={(node) => {
+                if (node?.filePath && currentRepoObj?._id) {
+                  navigate(`/repositories/${currentRepoObj._id}`);
+                }
+              }}
+            />
+          </React.Suspense>
         </div>
       </Card>
 
@@ -437,18 +440,28 @@ export default function DashboardPage() {
                           {repo.name}
                         </span>
                       </div>
-                      <Badge variant={repo.health > 92 ? "jade" : "citron"} size="sm">
-                        {repo.health}% Health
-                      </Badge>
+                      {typeof repo.health === "number" && !isNaN(repo.health) ? (
+                        <Badge variant={repo.health > 92 ? "jade" : "citron"} size="sm">
+                          {repo.health}% Health
+                        </Badge>
+                      ) : (
+                        <Badge variant="neutral" size="sm">
+                          Unanalyzed
+                        </Badge>
+                      )}
                     </div>
 
                     {/* Progress bar */}
                     <div className="w-full bg-abyssal-dark rounded-full h-1.5 overflow-hidden">
                       <div
                         className={`h-full rounded-full ${
-                          repo.health > 92 ? "bg-abyssal-jade shadow-jade-glow" : "bg-abyssal-citron shadow-citron-glow"
+                          typeof repo.health === "number" && repo.health > 92
+                            ? "bg-abyssal-jade shadow-jade-glow"
+                            : typeof repo.health === "number"
+                            ? "bg-abyssal-citron shadow-citron-glow"
+                            : "bg-abyssal-surface/30"
                         }`}
-                        style={{ width: `${repo.health}%` }}
+                        style={{ width: typeof repo.health === "number" ? `${repo.health}%` : "0%" }}
                       ></div>
                     </div>
 

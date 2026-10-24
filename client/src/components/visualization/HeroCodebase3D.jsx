@@ -224,6 +224,12 @@ function LivingMeshEdges({ nodesMap }) {
     return geometry;
   }, [nodesMap]);
 
+  useEffect(() => {
+    return () => {
+      if (lineData) lineData.dispose();
+    };
+  }, [lineData]);
+
   return (
     <lineSegments geometry={lineData}>
       <lineBasicMaterial vertexColors transparent opacity={0.3} linewidth={1} />

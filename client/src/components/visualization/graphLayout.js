@@ -177,8 +177,9 @@ export function classifyGroup(filePath = "", fileName = "", ext = "") {
     return "Utilities";
   }
 
-  // Backend (Controllers, Routes, Middleware, Server root)
+  // Backend (Controllers, Routes, Middleware, Server root, Backend directory)
   if (
+    normalized.includes("/backend/") ||
     normalized.includes("/routes/") ||
     normalized.includes("/controllers/") ||
     normalized.includes("/middleware/") ||
@@ -187,7 +188,8 @@ export function classifyGroup(filePath = "", fileName = "", ext = "") {
     normalized.includes("server.js") ||
     normalized.includes("server.ts") ||
     normalized.includes("app.js") ||
-    normalized.includes("app.ts")
+    normalized.includes("app.ts") ||
+    normalized.includes("backend_component")
   ) {
     return "Backend";
   }
@@ -281,8 +283,7 @@ export function buildGraphLayout(analysis, repo, options = {}) {
   // Generate 3D Positions for each group using spherical Fibonacci galaxy layout
   Object.keys(GROUP_CONFIG).forEach((groupName) => {
     const config = GROUP_CONFIG[groupName];
-    const files = groupedFiles[groupName];
-    if (files.length === 0) return;
+    const files = groupedFiles[groupName] || [];
     const center = config.center;
     const totalGroupFiles = files.length;
 
@@ -301,7 +302,7 @@ export function buildGraphLayout(analysis, repo, options = {}) {
       center: [...center]
     };
 
-    // 1. Level 0: Group Hub / Module Anchor Node
+    // 1. Level 0: Group Hub / Module Anchor Node (Always created for spatial orientation)
     const hubId = `hub-${groupName.toLowerCase()}`;
     const hubNode = {
       id: hubId,
@@ -324,6 +325,8 @@ export function buildGraphLayout(analysis, repo, options = {}) {
     };
     nodes.push(hubNode);
     nodesById.set(hubId, hubNode);
+
+    if (files.length === 0) return;
 
     // 2. Distribute File Nodes into LOD 1 (Module) and LOD 2 (File Detail)
     // First 15 files form the core module orbit (LOD 1)
@@ -391,9 +394,9 @@ export function buildGraphLayout(analysis, repo, options = {}) {
   const aggregatedEdges = [];
   const clusterConnectionWeights = {};
 
-  function addEdge(fromId, toId, type = "depends_on", color = "#475569", lodLevel = LOD_LEVELS.FILE) {
+  function addEdge(fromId, toId, type = "depends_on", color = "#475569", lodLevel = LOD_LEVELS.FILE, customId = null, extraProps = {}) {
     if (!fromId || !toId || fromId === toId) return;
-    const key = `${fromId}->${toId}`;
+    const key = customId || `${fromId}->${toId}`;
     if (edgeSet.has(key)) return;
     edgeSet.add(key);
 
@@ -401,7 +404,7 @@ export function buildGraphLayout(analysis, repo, options = {}) {
     const toNode = nodesById.get(toId);
     if (!fromNode || !toNode) return;
 
-    edges.push({
+    const edgeObj = {
       id: key,
       fromId,
       toId,
@@ -409,8 +412,17 @@ export function buildGraphLayout(analysis, repo, options = {}) {
       toPos: toNode.position,
       type,
       color,
-      lodLevel
-    });
+      lodLevel,
+      isSynthetic: extraProps.isSynthetic ?? (key.startsWith("agg-") || type === "architecture_backbone"),
+      provenance: extraProps.provenance || (key.startsWith("agg-") ? "synthetic_backbone" : "derived"),
+      ...extraProps
+    };
+
+    edges.push(edgeObj);
+
+    if (lodLevel === LOD_LEVELS.OVERVIEW || key.startsWith("agg-")) {
+      aggregatedEdges.push(edgeObj);
+    }
 
     // Record cluster-level aggregation weights
     if (fromNode.group !== toNode.group) {
@@ -419,12 +431,52 @@ export function buildGraphLayout(analysis, repo, options = {}) {
     }
   }
 
+  // Inter-cluster architecture backbone edges between domain hubs (LOD 0 Overview)
+  const hubBackbone = [
+    ["hub-frontend", "hub-services"],
+    ["hub-services", "hub-backend"],
+    ["hub-backend", "hub-database"],
+    ["hub-frontend", "hub-backend"],
+    ["hub-backend", "hub-utilities"],
+    ["hub-services", "hub-utilities"]
+  ];
+
+  hubBackbone.forEach(([fromHub, toHub]) => {
+    if (nodesById.has(fromHub) && nodesById.has(toHub)) {
+      const aggId = `agg-${fromHub.replace("hub-", "")}->${toHub.replace("hub-", "")}`;
+      addEdge(fromHub, toHub, "architecture_backbone", "#38bdf8", LOD_LEVELS.OVERVIEW, aggId, {
+        isSynthetic: true,
+        provenance: "synthetic_backbone"
+      });
+    }
+  });
+
+  // Preserve real AST-derived code relationships if present in analysis
+  if (Array.isArray(analysis?.relationships)) {
+    analysis.relationships.forEach((rel) => {
+      if (rel.from && rel.to && nodesById.has(rel.from) && nodesById.has(rel.to)) {
+        addEdge(
+          rel.from,
+          rel.to,
+          rel.type || "imports",
+          "#38bdf8",
+          LOD_LEVELS.FILE,
+          `ast-${rel.from}->${rel.to}`,
+          { isSynthetic: false, provenance: "ast_analysis" }
+        );
+      }
+    });
+  }
+
   // Intra-cluster: Connect child nodes to their group hub
   // For LOD 1: connect core module files
   // For LOD 2: connect remaining files
   nodes.forEach((node) => {
     if (!node.isHub && node.hubId) {
-      addEdge(node.id, node.hubId, "belongs_to", GROUP_CONFIG[node.group].color, node.lodLevel);
+      addEdge(node.id, node.hubId, "belongs_to", GROUP_CONFIG[node.group].color, node.lodLevel, null, {
+        isSynthetic: false,
+        provenance: "cluster_hierarchy"
+      });
     }
   });
 

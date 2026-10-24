@@ -475,9 +475,9 @@ export const connectGithubRepo = async (req, res, next) => {
         fileTree: [],
         filesCount: 0,
         lastUpdated: lastUpdated ? new Date(lastUpdated) : new Date(),
-        health: 100,
-        qualityGrade: "A+",
-        securityStatus: "Secure"
+        health: null,
+        qualityGrade: null,
+        securityStatus: "Notice"
       });
     }
 
