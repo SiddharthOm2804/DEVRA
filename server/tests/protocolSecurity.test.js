@@ -46,7 +46,7 @@ export async function runProtocolSecurityTests() {
   // ==========================================
 
   test("F-008: Approved origin succeeds in CORS handler", () => {
-    const handler = corsOriginHandler(["http://localhost:5173"], true);
+    const handler = corsOriginHandler(["http://localhost:5173", "https://app.devra.ai"], true);
     let errorResult = null;
     let allowResult = null;
     handler("http://localhost:5173", (err, allow) => {
@@ -55,10 +55,17 @@ export async function runProtocolSecurityTests() {
     });
     assert.strictEqual(errorResult, null);
     assert.strictEqual(allowResult, true);
+
+    handler("https://app.devra.ai", (err, allow) => {
+      errorResult = err;
+      allowResult = allow;
+    });
+    assert.strictEqual(errorResult, null);
+    assert.strictEqual(allowResult, true);
   });
 
-  test("F-008: Unapproved origin is rejected in production mode", () => {
-    const handler = corsOriginHandler(["http://localhost:5173"], true);
+  test("F-008: Unapproved external production origin is rejected", () => {
+    const handler = corsOriginHandler(["https://app.devra.ai"], true);
     let errorResult = null;
     let allowResult = null;
     handler("https://evil-attacker-site.com", (err, allow) => {
@@ -69,7 +76,65 @@ export async function runProtocolSecurityTests() {
     assert.strictEqual(errorResult.message, "Not allowed by CORS");
   });
 
-  test("F-008: Unapproved origin is blocked (false) in development mode without error", () => {
+  test("F-008: Unapproved localhost port is rejected in production", () => {
+    const handler = corsOriginHandler(["https://app.devra.ai"], true);
+    let errorResult = null;
+    let allowResult = null;
+    handler("http://localhost:9999", (err, allow) => {
+      errorResult = err;
+      allowResult = allow;
+    });
+    assert.ok(errorResult instanceof Error, "Should produce Error for unapproved localhost port in production");
+    assert.strictEqual(errorResult.message, "Not allowed by CORS");
+
+    handler("http://127.0.0.1:8888", (err, allow) => {
+      errorResult = err;
+      allowResult = allow;
+    });
+    assert.ok(errorResult instanceof Error);
+    assert.strictEqual(errorResult.message, "Not allowed by CORS");
+  });
+
+  test("F-008: Arbitrary localhost development origin is allowed in development", () => {
+    const handler = corsOriginHandler(["http://localhost:5173"], false);
+    let errorResult = null;
+    let allowResult = null;
+    handler("http://localhost:9999", (err, allow) => {
+      errorResult = err;
+      allowResult = allow;
+    });
+    assert.strictEqual(errorResult, null);
+    assert.strictEqual(allowResult, true);
+
+    handler("http://127.0.0.1:8080", (err, allow) => {
+      errorResult = err;
+      allowResult = allow;
+    });
+    assert.strictEqual(errorResult, null);
+    assert.strictEqual(allowResult, true);
+  });
+
+  test("F-008: Normalizes default ports 80/443 and trailing slashes correctly", () => {
+    const handler = corsOriginHandler(["http://localhost:80", "https://app.devra.ai:443"], true);
+    let errorResult = null;
+    let allowResult = null;
+
+    handler("http://localhost", (err, allow) => {
+      errorResult = err;
+      allowResult = allow;
+    });
+    assert.strictEqual(errorResult, null);
+    assert.strictEqual(allowResult, true);
+
+    handler("https://app.devra.ai", (err, allow) => {
+      errorResult = err;
+      allowResult = allow;
+    });
+    assert.strictEqual(errorResult, null);
+    assert.strictEqual(allowResult, true);
+  });
+
+  test("F-008: Unknown development origin is handled according to existing policy (blocked without error)", () => {
     const handler = corsOriginHandler(["http://localhost:5173"], false);
     let errorResult = null;
     let allowResult = null;

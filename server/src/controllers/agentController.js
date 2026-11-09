@@ -284,4 +284,3 @@ export const listSessions = async (req, res, next) => {
     next(error);
   }
 };
-

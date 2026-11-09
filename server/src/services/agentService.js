@@ -504,4 +504,3 @@ export async function rejectChanges(sessionId, userId, reason = "User rejected p
 
   return session;
 }
-

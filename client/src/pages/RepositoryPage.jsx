@@ -591,7 +591,7 @@ export default function RepositoryPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by repo name, owner, or description..."
-              className="w-full pl-9 pr-3.5 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-lavender focus:bg-white font-mono transition-colors"
+              className="w-full pl-9 pr-3.5 py-2 rounded-lg bg-abyssal-surface border border-abyssal-border text-xs text-abyssal-ivory placeholder-abyssal-muted focus:outline-none focus:border-abyssal-jade focus:bg-abyssal-surface font-mono transition-colors"
             />
             {searchQuery && (
               <button

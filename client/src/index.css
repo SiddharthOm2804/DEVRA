@@ -143,6 +143,7 @@ button, a {
 /* Keep legacy light utility classes in step with the app's dark-first palette. */
 .dark .bg-white,
 .dark .hover\:bg-white:hover { background-color: #10191B; }
+.dark .focus\:bg-white:focus { background-color: #10191B; }
 .dark .bg-slate-50,
 .dark .hover\:bg-slate-50:hover { background-color: #0B1214; }
 .dark .bg-slate-100 { background-color: #131D1F; }
@@ -157,7 +158,47 @@ button, a {
 .dark .text-slate-700 { color: #C0CEC8; }
 .dark .text-slate-600 { color: #ADBCB7; }
 .dark .text-slate-500 { color: #859792; }
+.dark .placeholder-slate-400::placeholder { color: #788B86; }
 .dark .text-indigo-700 { color: #61DCC4; }
+
+/* Ensure textual form inputs and textareas have crisp readable text and dark surface while preserving checkboxes/radios */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+textarea,
+select {
+  background-color: #141E20;
+  color: #F1F4ED;
+  caret-color: #61DCC4;
+  border-color: #243437;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
+textarea:focus,
+select:focus {
+  background-color: #141E20;
+  color: #F1F4ED;
+  border-color: #61DCC4;
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #788B86;
+  opacity: 1;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+.dark textarea,
+.dark select {
+  background-color: #141E20;
+  color: #F1F4ED;
+  caret-color: #61DCC4;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #788B86;
+  opacity: 1;
+}
 
 /* Respect user reduced motion preference */
 @media (prefers-reduced-motion: reduce) {

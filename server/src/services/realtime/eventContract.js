@@ -16,36 +16,90 @@ export const EVENT_TYPES = {
   HEARTBEAT: "heartbeat"
 };
 
+const SENSITIVE_KEY_PATTERNS = [
+  /password/i,
+  /passphrase/i,
+  /token/i,
+  /secret/i,
+  /api[-_]?key/i,
+  /auth(?:orization)?/i,
+  /credential/i,
+  /private[-_]?key/i,
+  /cookie/i,
+  /session/i
+];
+
+function isSensitiveKey(key) {
+  if (typeof key !== "string") return false;
+  return SENSITIVE_KEY_PATTERNS.some((pattern) => pattern.test(key));
+}
+
 /**
- * Sanitizes event payloads to ensure no secrets, auth tokens, passwords, or dangerous scripts leak
+ * Sanitizes event payloads to ensure no secrets, auth tokens, passwords, or credentials leak.
+ * Uses a recursion activeStack (Set) to detect actual circular reference cycles while safely
+ * permitting repeated/shared non-circular object references.
  */
-export function sanitizePayload(payload = {}) {
+export function sanitizePayload(payload = {}, activeStack = new Set()) {
   if (!payload || typeof payload !== "object") {
     return payload;
   }
 
-  const sanitized = Array.isArray(payload) ? [] : {};
+  // Handle Date objects preserving instanceof Date
+  if (payload instanceof Date) {
+    return new Date(payload.getTime());
+  }
 
-  for (const [key, value] of Object.entries(payload)) {
-    const lowerKey = key.toLowerCase();
-
-    // Redact sensitive credentials and keys
-    if (
-      lowerKey.includes("password") ||
-      lowerKey.includes("token") ||
-      lowerKey.includes("secret") ||
-      lowerKey.includes("apikey") ||
-      lowerKey.includes("authorization")
-    ) {
-      sanitized[key] = "[REDACTED]";
-    } else if (value && typeof value === "object" && !(value instanceof Date)) {
-      sanitized[key] = sanitizePayload(value);
-    } else {
-      sanitized[key] = value;
+  // Convert Mongoose documents or objects with toObject/toJSON to plain objects
+  let target = payload;
+  if (typeof target.toObject === "function") {
+    try {
+      target = target.toObject();
+    } catch {
+      // Fallback to target if toObject fails
+    }
+  } else if (typeof target.toJSON === "function") {
+    try {
+      target = target.toJSON();
+    } catch {
+      // Fallback to target if toJSON fails
     }
   }
 
-  return sanitized;
+  if (!target || typeof target !== "object") {
+    return target;
+  }
+
+  if (target instanceof Date) {
+    return new Date(target.getTime());
+  }
+
+  // Handle circular reference cycles on active recursion path
+  if (activeStack.has(target)) {
+    return "[Circular]";
+  }
+
+  activeStack.add(target);
+
+  try {
+    if (Array.isArray(target)) {
+      return target.map((item) => sanitizePayload(item, activeStack));
+    }
+
+    const sanitized = {};
+    for (const [key, value] of Object.entries(target)) {
+      if (isSensitiveKey(key)) {
+        sanitized[key] = "[REDACTED]";
+      } else if (value && typeof value === "object") {
+        sanitized[key] = sanitizePayload(value, activeStack);
+      } else {
+        sanitized[key] = value;
+      }
+    }
+    return sanitized;
+  } finally {
+    // Unwind recursion stack so sibling/shared references are preserved
+    activeStack.delete(target);
+  }
 }
 
 /**

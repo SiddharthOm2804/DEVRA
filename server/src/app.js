@@ -17,6 +17,9 @@ import { config } from "./config/env.js";
 
 const app = express();
 
+// Trust reverse proxy (e.g. Nginx in Docker Compose) for accurate client IP resolution & rate limiting
+app.set("trust proxy", 1);
+
 // Metrics collection middleware (registered early to capture all inbound requests)
 app.use(metricsMiddleware);
 
@@ -27,13 +30,35 @@ app.use(
   })
 );
 
+// Helper to normalize origin strings for consistent comparison (strips trailing slashes, default ports :80 and :443)
+export const normalizeOrigin = (urlStr) => {
+  if (!urlStr || typeof urlStr !== "string") return "";
+  try {
+    const parsed = new URL(urlStr);
+    const protocol = parsed.protocol.toLowerCase();
+    const hostname = parsed.hostname.toLowerCase();
+    let port = parsed.port;
+    if ((protocol === "http:" && port === "80") || (protocol === "https:" && port === "443")) {
+      port = "";
+    }
+    return `${protocol}//${hostname}${port ? `:${port}` : ""}`;
+  } catch {
+    // If not a parseable URL, strip trailing slash and default ports via regex
+    return urlStr.trim().replace(/\/+$/, "").replace(/:(80|443)$/, "");
+  }
+};
+
 // CORS Configuration: Supports Web Client, Local Dev, and VS Code Extension
 export const defaultAllowedOrigins = [
   config.clientUrl,
+  "http://localhost",
+  "http://localhost:80",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://localhost:3000",
-  "http://127.0.0.1:3000"
+  "http://127.0.0.1:3000",
+  "http://localhost:5001",
+  "http://127.0.0.1:5001"
 ].filter(Boolean);
 
 export const corsOriginHandler = (allowedOrigins = defaultAllowedOrigins, isProduction = config.isProduction) => {
@@ -43,11 +68,25 @@ export const corsOriginHandler = (allowedOrigins = defaultAllowedOrigins, isProd
       return callback(null, true);
     }
 
-    if (allowedOrigins.includes(origin)) {
+    const normalizedOrigin = normalizeOrigin(origin);
+    const isAllowed = allowedOrigins.some((allowed) => {
+      const normalizedAllowed = normalizeOrigin(allowed);
+      return allowed === origin || normalizedAllowed === normalizedOrigin;
+    });
+
+    if (isAllowed) {
       return callback(null, true);
     }
 
-    // In production, reject unapproved origins strictly
+    // In non-production only, permit arbitrary localhost and 127.0.0.1 ports
+    if (
+      !isProduction &&
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalizedOrigin)
+    ) {
+      return callback(null, true);
+    }
+
+    // In production, reject unapproved origins strictly (including unapproved localhost)
     if (isProduction) {
       return callback(new Error("Not allowed by CORS"));
     }

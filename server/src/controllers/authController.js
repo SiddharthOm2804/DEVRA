@@ -678,4 +678,3 @@ export const createStreamTicket = async (req, res, next) => {
     next(error);
   }
 };
-

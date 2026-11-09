@@ -354,9 +354,9 @@ export default function AgentModePanel({ repositoryId, repositoryName }) {
       </Card>
 
       {/* Goal Input Section */}
-      <Card className="bg-white border-slate-200 shadow-card-sm space-y-4">
+      <Card dark className="bg-abyssal-card border-abyssal-border shadow-card-sm space-y-4">
         <div>
-          <label className="text-xs font-bold font-mono text-slate-900 block mb-1">
+          <label className="text-xs font-bold font-mono text-abyssal-secondary block mb-1">
             DEVELOPMENT REQUEST / FEATURE GOAL
           </label>
           <div className="flex gap-2">
@@ -367,7 +367,13 @@ export default function AgentModePanel({ repositoryId, repositoryName }) {
               onKeyDown={(e) => e.key === "Enter" && handleStartPlanning()}
               placeholder="e.g., Add forgot password functionality, or Add JWT refresh token rotation"
               disabled={loading}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-sm font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-lavender focus:bg-white transition-colors"
+              className="flex-1 px-4 py-2.5 rounded-lg border text-sm font-mono transition-colors"
+              style={{
+                backgroundColor: "#141E20",
+                color: "#F1F4ED",
+                borderColor: "#243437",
+                caretColor: "#61DCC4"
+              }}
             />
             <Button
               onClick={() => handleStartPlanning()}

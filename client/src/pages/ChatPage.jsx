@@ -225,7 +225,7 @@ export default function ChatPage() {
             role: "assistant",
             content: `### Devra Code Intelligence Ready
 
-I have indexed the codebase for **${selectedRepo?.name || "your repository"}**. 
+I have indexed the codebase for **${selectedRepo?.name || "your repository"}**.
 You can ask architectural questions, trace data pipelines, inspect security implementations, or query file locations.
 
 Try one of the quick suggestions below or type your inquiry.`,
@@ -572,7 +572,7 @@ Try one of the quick suggestions below or type your inquiry.`,
                   }
                 }}
                 placeholder={`Ask anything about ${selectedRepo?.name || "the codebase"}... (Press Enter to send, Shift+Enter for new line)`}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-lavender focus:bg-white font-mono resize-none leading-relaxed transition-colors"
+                className="w-full px-4 py-2.5 rounded-xl bg-abyssal-surface border border-abyssal-border text-xs text-abyssal-ivory placeholder-abyssal-muted focus:outline-none focus:border-abyssal-jade focus:bg-abyssal-surface font-mono resize-none leading-relaxed transition-colors"
               />
             </div>
 

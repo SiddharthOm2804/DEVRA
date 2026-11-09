@@ -112,7 +112,7 @@ export default function ThreeScene() {
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 8, 5]} intensity={1.2} color="#f8fafc" />
         <pointLight position={[-5, -5, -3]} intensity={0.5} color="#38bdf8" />
-        
+
         <Float speed={1.5} rotationIntensity={0.4} floatIntensity={0.6}>
           <CodebaseGraph hovered={hovered} setHovered={setHovered} />
         </Float>

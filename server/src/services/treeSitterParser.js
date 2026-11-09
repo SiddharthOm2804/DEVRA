@@ -100,7 +100,7 @@ export function extractSyntaxSymbolsRegex(filePath, fileName, content, language 
       const match = lineText.match(p.regex);
       if (match) {
         const symbolName = match[3] || match[4] || match[1]?.slice(0, 30) || `${p.type}_L${lineNum}`;
-        
+
         // Find block scope end
         let endLine = lineNum;
         let braceCount = 0;

@@ -6,7 +6,7 @@
  * - Database
  * - Services
  * - Utilities
- * 
+ *
  * Supports Multi-Level LOD (Level of Detail) for large repositories with
  * thousands of files and connections.
  */
@@ -14,38 +14,51 @@
 export const GROUP_CONFIG = {
   Frontend: {
     name: "Frontend",
+    districtName: "Frontend City",
     color: "#38bdf8",
     glowColor: "#0284c7",
-    center: [-5.2, 2.2, 0.5],
-    description: "Client UI, React components, hooks & styling"
+    center: [-6.5, 3.2, 0.5],
+    description: "Client UI, React components, pages, hooks & styling"
   },
   Backend: {
     name: "Backend",
+    districtName: "Backend City",
     color: "#34d399",
     glowColor: "#059669",
-    center: [0, 3.4, -0.5],
-    description: "API routes, controllers, middleware & express core"
+    center: [0, 4.2, -0.8],
+    description: "API routes, controllers, middleware & express server"
   },
   Services: {
     name: "Services",
+    districtName: "Services District",
     color: "#a855f7",
     glowColor: "#7c3aed",
-    center: [5.2, 1.8, 0.2],
-    description: "Business logic engines, integrations & workers"
+    center: [6.5, 2.8, 0.4],
+    description: "Business logic engines, integrations, AI & workers"
   },
   Database: {
     name: "Database",
+    districtName: "Database District",
     color: "#fbbf24",
     glowColor: "#d97706",
-    center: [3.4, -3.2, 0.4],
-    description: "Mongoose models, schemas & persistence layer"
+    center: [4.2, -3.8, 0.5],
+    description: "MongoDB models, schemas, vector indexes & persistence"
   },
   Utilities: {
     name: "Utilities",
+    districtName: "Utilities District",
     color: "#f43f5e",
     glowColor: "#e11d48",
-    center: [-3.4, -3.0, -0.4],
+    center: [-4.2, -3.8, -0.5],
     description: "Shared helpers, configs, formatters & constants"
+  },
+  Infrastructure: {
+    name: "Infrastructure",
+    districtName: "Infrastructure District",
+    color: "#64748b",
+    glowColor: "#475569",
+    center: [0, -5.2, 1.2],
+    description: "Docker containers, deployment, CI/CD & orchestration"
   }
 };
 
@@ -109,18 +122,36 @@ export function determineLODLevel(distance, currentLOD = LOD_LEVELS.OVERVIEW) {
 }
 
 /**
- * Classifies a file or path into one of the 5 visual groups
+ * Classifies a file or path into one of the 6 visual districts
  */
 export function classifyGroup(filePath = "", fileName = "", ext = "") {
   const normalized = (filePath + "/" + fileName).toLowerCase().replace(/\\/g, "/");
 
-  // Database
+  // Infrastructure District
+  if (
+    normalized.includes("docker") ||
+    normalized.includes("dockerfile") ||
+    normalized.includes("nginx") ||
+    normalized.includes(".github") ||
+    normalized.includes("workflows") ||
+    normalized.includes("ecosystem.config") ||
+    normalized.includes("kubernetes") ||
+    normalized.includes("k8s") ||
+    normalized.includes("helm") ||
+    normalized.includes("deploy")
+  ) {
+    return "Infrastructure";
+  }
+
+  // Database District
   if (
     normalized.includes("/models/") ||
     normalized.includes("/model/") ||
     normalized.includes("/schema/") ||
     normalized.includes("/db/") ||
     normalized.includes("/database/") ||
+    normalized.includes("vectorstore") ||
+    normalized.includes("retriever") ||
     normalized.includes("mongo") ||
     normalized.includes("prisma") ||
     normalized.includes(".sql")
@@ -128,7 +159,7 @@ export function classifyGroup(filePath = "", fileName = "", ext = "") {
     return "Database";
   }
 
-  // Services
+  // Services District
   if (
     normalized.includes("/services/") ||
     normalized.includes("/service/") ||
@@ -136,12 +167,14 @@ export function classifyGroup(filePath = "", fileName = "", ext = "") {
     normalized.includes("/integrations/") ||
     normalized.includes("/engine/") ||
     normalized.includes("githubservice") ||
-    normalized.includes("analysisservice")
+    normalized.includes("analysisservice") ||
+    normalized.includes("agentservice") ||
+    normalized.includes("treesitter")
   ) {
     return "Services";
   }
 
-  // Frontend
+  // Frontend City
   if (
     normalized.includes("/client/") ||
     normalized.includes("/frontend/") ||
@@ -149,6 +182,7 @@ export function classifyGroup(filePath = "", fileName = "", ext = "") {
     normalized.includes("/pages/") ||
     normalized.includes("/layouts/") ||
     normalized.includes("/hooks/") ||
+    normalized.includes("/context/") ||
     normalized.includes("/views/") ||
     normalized.includes("/styles/") ||
     ext === "tsx" ||
@@ -161,7 +195,7 @@ export function classifyGroup(filePath = "", fileName = "", ext = "") {
     return "Frontend";
   }
 
-  // Utilities
+  // Utilities District
   if (
     normalized.includes("/utils/") ||
     normalized.includes("/util/") ||
@@ -177,7 +211,7 @@ export function classifyGroup(filePath = "", fileName = "", ext = "") {
     return "Utilities";
   }
 
-  // Backend (Controllers, Routes, Middleware, Server root, Backend directory)
+  // Backend City (Controllers, Routes, Middleware, Server root)
   if (
     normalized.includes("/backend/") ||
     normalized.includes("/routes/") ||
@@ -194,21 +228,72 @@ export function classifyGroup(filePath = "", fileName = "", ext = "") {
     return "Backend";
   }
 
-  // Default fallback
+  // Default fallbacks
   if (normalized.includes("controller") || normalized.includes("route")) return "Backend";
   if (normalized.includes("ui") || normalized.includes("view")) return "Frontend";
   return "Utilities";
 }
 
 /**
+ * Classifies entity type for richer semantic identification
+ */
+export function classifyEntityType(filePath = "", fileName = "", ext = "", isEntryPoint = false) {
+  const norm = (filePath + "/" + fileName).toLowerCase();
+  if (isEntryPoint) return "Application Entry";
+  if (norm.includes("docker") || norm.includes("nginx")) return "Infrastructure";
+  if (norm.includes("/routes/")) return "API Route";
+  if (norm.includes("/controllers/")) return "API Controller";
+  if (norm.includes("/middleware/")) return "Middleware";
+  if (norm.includes("/models/")) return "Database Model";
+  if (norm.includes("/services/")) return "Service Engine";
+  if (norm.includes("/pages/")) return "Page View";
+  if (norm.includes("/components/")) return "React Component";
+  if (norm.includes("/hooks/")) return "React Hook";
+  if (norm.includes("/context/")) return "Context Provider";
+  if (norm.includes("/utils/") || norm.includes("/helpers/")) return "Utility Module";
+  if (ext === "tsx" || ext === "jsx") return "UI Component";
+  if (ext === "ts" || ext === "js") return "Code Module";
+  return ext ? `${ext.toUpperCase()} File` : "Source File";
+}
+
+/**
  * Derives complexity and issue count based on lines, entry point, and structure
  */
 export function deriveComplexity(file, isEntryPoint) {
+  const lines = Number(file.lines || 0);
+  const issues = [];
+
+  let score = 30; // base score
+  if (lines > 500) {
+    score += 45;
+    issues.push(`High file size (${lines} LOC) — consider refactoring into smaller modules`);
+  } else if (lines > 250) {
+    score += 25;
+    issues.push(`Moderate file size (${lines} LOC)`);
+  } else if (lines > 100) {
+    score += 15;
+  }
+
+  if (isEntryPoint) {
+    score += 20;
+  }
+
+  const p = (file.path || "").toLowerCase();
+  if (p.includes("auth") || p.includes("security") || p.includes("token")) {
+    score += 10;
+  }
+
+  score = Math.min(98, Math.max(15, score));
+
+  let label = "Low";
+  if (score >= 75) label = "High";
+  else if (score >= 50) label = "Medium";
+
   return {
-    score: null,
-    label: "Not analyzed",
-    issueCount: 0,
-    issues: []
+    score,
+    label,
+    issueCount: issues.length,
+    issues
   };
 }
 
@@ -252,13 +337,14 @@ export function buildGraphLayout(analysis, repo, options = {}) {
   const rawModules = analysis?.modules || [];
   const dependencies = analysis?.dependencies || [];
 
-  // Group raw files into the 5 clusters
+  // Group raw files into the 6 districts
   const groupedFiles = {
     Frontend: [],
     Backend: [],
     Database: [],
     Services: [],
-    Utilities: []
+    Utilities: [],
+    Infrastructure: []
   };
 
   if (rawFiles.length > 0) {
@@ -362,12 +448,15 @@ export function buildGraphLayout(analysis, repo, options = {}) {
       }
 
       const nodeId = file.path || `${groupName}-${file.name}-${idx}`;
+      const entityType = classifyEntityType(file.path, file.name, file.extension, isEntry);
       const fileNode = {
         id: nodeId,
         name: file.name,
         path: file.path,
-        type: file.extension ? `${file.extension.toUpperCase()} File` : "Source File",
+        type: entityType,
+        entityType,
         group: groupName,
+        district: config.districtName || groupName,
         groupColor: config.color,
         isHub: false,
         lodLevel: fileLod,
@@ -375,12 +464,13 @@ export function buildGraphLayout(analysis, repo, options = {}) {
         size: file.size ?? null,
         complexity,
         dependenciesCount: 0,
+        dependentsCount: 0,
         dependenciesList: dependencies.slice(idx % 3, (idx % 3) + 3).map((d) => d.name),
         position: [px, py, pz],
-        radius: isEntry ? 0.28 : Math.max(0.12, Math.min(0.24, (complexity.score / 100) * 0.25)),
+        radius: isEntry ? 0.32 : Math.max(0.14, Math.min(0.28, (complexity.score / 100) * 0.3)),
         isEntryPoint: isEntry,
         hubId,
-        symbols: []
+        symbols: deriveAstSymbols({ name: file.name, isEntryPoint: isEntry, group: groupName })
       };
 
       nodes.push(fileNode);
@@ -438,7 +528,9 @@ export function buildGraphLayout(analysis, repo, options = {}) {
     ["hub-backend", "hub-database"],
     ["hub-frontend", "hub-backend"],
     ["hub-backend", "hub-utilities"],
-    ["hub-services", "hub-utilities"]
+    ["hub-services", "hub-utilities"],
+    ["hub-infrastructure", "hub-backend"],
+    ["hub-infrastructure", "hub-frontend"]
   ];
 
   hubBackbone.forEach(([fromHub, toHub]) => {
@@ -455,11 +547,22 @@ export function buildGraphLayout(analysis, repo, options = {}) {
   if (Array.isArray(analysis?.relationships)) {
     analysis.relationships.forEach((rel) => {
       if (rel.from && rel.to && nodesById.has(rel.from) && nodesById.has(rel.to)) {
+        const fromNode = nodesById.get(rel.from);
+        const toNode = nodesById.get(rel.to);
+        if (fromNode) fromNode.dependenciesCount = (fromNode.dependenciesCount || 0) + 1;
+        if (toNode) toNode.dependentsCount = (toNode.dependentsCount || 0) + 1;
+
+        let edgeColor = "#38bdf8"; // imports default
+        if (rel.type === "api_request") edgeColor = "#34d399";
+        else if (rel.type === "db_access") edgeColor = "#fbbf24";
+        else if (rel.type === "service_call") edgeColor = "#a855f7";
+        else if (rel.type === "event_emit") edgeColor = "#ec4899";
+
         addEdge(
           rel.from,
           rel.to,
           rel.type || "imports",
-          "#38bdf8",
+          edgeColor,
           LOD_LEVELS.FILE,
           `ast-${rel.from}->${rel.to}`,
           { isSynthetic: false, provenance: "ast_analysis" }
@@ -507,7 +610,65 @@ export function buildGraphLayout(analysis, repo, options = {}) {
     aggregatedEdges,
     clusterMetrics,
     linePositions: linePositionsByLod[LOD_LEVELS.FILE],
-    linePositionsByLod
+    linePositionsByLod,
+    stats: computeGraphAnalytics(nodes, edges)
+  };
+}
+
+/**
+ * Computes graph analytics: degree distribution, most connected, complexity distribution
+ */
+export function computeGraphAnalytics(nodes = [], edges = []) {
+  const fileNodes = nodes.filter((n) => !n.isHub);
+  const totalFiles = fileNodes.length;
+  const totalEdges = edges.filter((e) => !e.isSynthetic).length;
+
+  let totalComplexity = 0;
+  let complexNodeCount = 0;
+  let isolatedCount = 0;
+  const inDegreeMap = new Map();
+  const outDegreeMap = new Map();
+
+  edges.forEach((e) => {
+    outDegreeMap.set(e.fromId, (outDegreeMap.get(e.fromId) || 0) + 1);
+    inDegreeMap.set(e.toId, (inDegreeMap.get(e.toId) || 0) + 1);
+  });
+
+  const rankedNodes = fileNodes.map((n) => {
+    const inDeg = inDegreeMap.get(n.id) || 0;
+    const outDeg = outDegreeMap.get(n.id) || 0;
+    const totalDeg = inDeg + outDeg;
+    if (totalDeg === 0) isolatedCount++;
+    const compScore = n.complexity?.score || 30;
+    totalComplexity += compScore;
+    if (compScore >= 75) complexNodeCount++;
+
+    return {
+      id: n.id,
+      name: n.name,
+      path: n.path,
+      group: n.group,
+      inDegree: inDeg,
+      outDegree: outDeg,
+      degree: totalDeg,
+      complexityScore: compScore
+    };
+  });
+
+  rankedNodes.sort((a, b) => b.degree - a.degree);
+  const mostConnected = rankedNodes.slice(0, 5);
+
+  const avgDegree = totalFiles > 0 ? (totalEdges * 2 / totalFiles).toFixed(2) : "0.00";
+  const avgComplexity = totalFiles > 0 ? Math.round(totalComplexity / totalFiles) : 0;
+
+  return {
+    totalFiles,
+    totalEdges,
+    avgDegree: Number(avgDegree),
+    avgComplexity,
+    complexNodeCount,
+    isolatedCount,
+    mostConnected
   };
 }
 
@@ -564,7 +725,7 @@ export function filterGraphForLOD(graph, lodLevel = LOD_LEVELS.FILE, options = {
  */
 export function generateSyntheticGraph(nodeCount = 1000, edgeFactor = 1.8) {
   const syntheticFiles = [];
-  const groups = ["Frontend", "Backend", "Database", "Services", "Utilities"];
+  const groups = ["Frontend", "Backend", "Database", "Services", "Utilities", "Infrastructure"];
   const extensions = ["tsx", "ts", "jsx", "js", "json", "css"];
 
   for (let i = 0; i < nodeCount; i++) {

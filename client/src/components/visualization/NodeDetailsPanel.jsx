@@ -356,6 +356,19 @@ export default function NodeDetailsPanel({
         >
           Center Camera on Node
         </Button>
+
+        {/* Ask DEVRA AI Action */}
+        <button
+          onClick={() => {
+            const prompt = `Explain the architectural purpose and dependencies of ${selectedNode.name} in path [${selectedNode.path}]. What does it connect to?`;
+            const chatUrl = `/chat?prompt=${encodeURIComponent(prompt)}`;
+            window.open(chatUrl, "_blank");
+          }}
+          className="w-full py-2 px-3 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-300 font-semibold text-xs flex items-center justify-center gap-2 transition-colors"
+        >
+          <Cpu className="w-3.5 h-3.5" />
+          <span>Ask DEVRA AI About This Node</span>
+        </button>
       </div>
     </div>
   );

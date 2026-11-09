@@ -65,6 +65,106 @@ export async function runRealtimeStreamingTests() {
     assert.strictEqual(sanitized.nested.publicData, "visible");
   });
 
+  test("sanitizePayload redacts all sensitive key variations recursively and in arrays", () => {
+    const payload = {
+      api_key: "key-1",
+      "api-key": "key-2",
+      access_token: "tok-1",
+      refresh_token: "tok-2",
+      client_secret: "sec-1",
+      authorization: "Bearer 123",
+      private_key: "-----BEGIN RSA PRIVATE KEY-----",
+      privateKey: "pk-val",
+      cookie: "session_id=abc",
+      sessionToken: "sess-val",
+      credentials: "secret-credentials-string",
+      arrayData: [
+        { apiKey: "arr-key", safe: 123 },
+        { userPassword: "pwd", flag: true }
+      ]
+    };
+
+    const sanitized = sanitizePayload(payload);
+    assert.strictEqual(sanitized.api_key, "[REDACTED]");
+    assert.strictEqual(sanitized["api-key"], "[REDACTED]");
+    assert.strictEqual(sanitized.access_token, "[REDACTED]");
+    assert.strictEqual(sanitized.refresh_token, "[REDACTED]");
+    assert.strictEqual(sanitized.client_secret, "[REDACTED]");
+    assert.strictEqual(sanitized.authorization, "[REDACTED]");
+    assert.strictEqual(sanitized.private_key, "[REDACTED]");
+    assert.strictEqual(sanitized.privateKey, "[REDACTED]");
+    assert.strictEqual(sanitized.cookie, "[REDACTED]");
+    assert.strictEqual(sanitized.sessionToken, "[REDACTED]");
+    assert.strictEqual(sanitized.credentials, "[REDACTED]");
+    assert.strictEqual(sanitized.arrayData[0].apiKey, "[REDACTED]");
+    assert.strictEqual(sanitized.arrayData[0].safe, 123);
+    assert.strictEqual(sanitized.arrayData[1].userPassword, "[REDACTED]");
+    assert.strictEqual(sanitized.arrayData[1].flag, true);
+  });
+
+  test("sanitizePayload handles circular references safely without treating shared objects as circular", () => {
+    // 1. Shared non-circular object
+    const sharedConfig = { theme: "dark", active: true };
+    const sharedPayload = {
+      firstRef: sharedConfig,
+      secondRef: sharedConfig,
+      nested: {
+        thirdRef: sharedConfig
+      }
+    };
+
+    const sanitizedShared = sanitizePayload(sharedPayload);
+    assert.notStrictEqual(sanitizedShared.firstRef, "[Circular]");
+    assert.notStrictEqual(sanitizedShared.secondRef, "[Circular]");
+    assert.notStrictEqual(sanitizedShared.nested.thirdRef, "[Circular]");
+    assert.strictEqual(sanitizedShared.firstRef.theme, "dark");
+    assert.strictEqual(sanitizedShared.secondRef.theme, "dark");
+    assert.strictEqual(sanitizedShared.nested.thirdRef.theme, "dark");
+
+    // 2. Genuine circular reference
+    const circularObj = { name: "cycle" };
+    circularObj.self = circularObj;
+    const sanitizedCircular = sanitizePayload(circularObj);
+    assert.strictEqual(sanitizedCircular.name, "cycle");
+    assert.strictEqual(sanitizedCircular.self, "[Circular]");
+
+    // Ensure it is valid JSON serializable
+    assert.doesNotThrow(() => JSON.stringify(sanitizedCircular));
+  });
+
+  test("sanitizePayload handles Date objects, Mongoose-like objects, and safe public fields", () => {
+    const testDate = new Date("2026-01-01T00:00:00.000Z");
+    const mongooseLikeDoc = {
+      title: "Devra Doc",
+      apiKey: "secret-in-doc",
+      createdAt: testDate,
+      toObject: function () {
+        return {
+          title: this.title,
+          apiKey: this.apiKey,
+          createdAt: this.createdAt
+        };
+      }
+    };
+
+    const sanitized = sanitizePayload({
+      doc: mongooseLikeDoc,
+      dateField: testDate,
+      safePublicField: "public-value",
+      numericField: 42
+    });
+
+    assert.strictEqual(sanitized.doc.title, "Devra Doc");
+    assert.strictEqual(sanitized.doc.apiKey, "[REDACTED]");
+    assert.ok(sanitized.doc.createdAt instanceof Date);
+    assert.strictEqual(sanitized.doc.createdAt.toISOString(), testDate.toISOString());
+    assert.ok(sanitized.dateField instanceof Date);
+    assert.strictEqual(sanitized.dateField.toISOString(), testDate.toISOString());
+    assert.strictEqual(sanitized.safePublicField, "public-value");
+    assert.strictEqual(sanitized.numericField, 42);
+    assert.doesNotThrow(() => JSON.stringify(sanitized));
+  });
+
   // 3. EventBus Publishing & Subscription
   await test("EventBus publishes and delivers task events to registered subscribers", async () => {
     const bus = eventBus;

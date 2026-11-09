@@ -1,6 +1,6 @@
 /**
  * Base Abstract Class for DEVRA Vector Store implementations
- * 
+ *
  * Provides a uniform contract for persistent vector search databases
  * (Redis, pgvector, Qdrant, Pinecone, or in-memory fallback).
  */

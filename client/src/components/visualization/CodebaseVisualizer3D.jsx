@@ -21,7 +21,8 @@ import {
   Zap,
   Gauge,
   Sliders,
-  Code
+  Code,
+  Compass
 } from "lucide-react";
 import {
   buildGraphLayout,
@@ -32,6 +33,8 @@ import {
   GROUP_CONFIG
 } from "./graphLayout";
 import NodeDetailsPanel from "./NodeDetailsPanel";
+import SpatialAnalyticsOverlay from "./SpatialAnalyticsOverlay";
+import SpatialMinimap from "./SpatialMinimap";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
 
@@ -481,6 +484,8 @@ export default function CodebaseVisualizer3D({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [resetTrigger, setResetTrigger] = useState(0);
   const [targetFocus, setTargetFocus] = useState(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showMinimap, setShowMinimap] = useState(true);
 
   // LOD & Performance States
   const [activeLodLevel, setActiveLodLevel] = useState(LOD_LEVELS.MODULE);
@@ -767,6 +772,32 @@ export default function CodebaseVisualizer3D({
           <div className="h-4 w-px bg-slate-800 mx-0.5"></div>
 
           <button
+            onClick={() => setShowAnalytics(!showAnalytics)}
+            className={`p-1.5 rounded-lg transition-colors ${
+              showAnalytics
+                ? "text-emerald-400 bg-emerald-500/20"
+                : "text-slate-400 hover:text-white hover:bg-slate-800"
+            }`}
+            title={showAnalytics ? "Hide Graph Analytics" : "Show Graph Analytics & Metrics"}
+          >
+            <Gauge className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => setShowMinimap(!showMinimap)}
+            className={`p-1.5 rounded-lg transition-colors ${
+              showMinimap
+                ? "text-sky-400 bg-sky-500/20"
+                : "text-slate-400 hover:text-white hover:bg-slate-800"
+            }`}
+            title={showMinimap ? "Hide District Navigator" : "Show District Navigator"}
+          >
+            <Compass className="w-4 h-4" />
+          </button>
+
+          <div className="h-4 w-px bg-slate-800 mx-0.5"></div>
+
+          <button
             onClick={() => setIsFullscreen(!isFullscreen)}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen 3D Cockpit"}
@@ -945,12 +976,37 @@ export default function CodebaseVisualizer3D({
         </div>
       </div>
 
-      {/* Floating Bottom Right Navigation Hint */}
-      <div className="absolute bottom-4 right-4 z-20 pointer-events-none hidden md:block">
-        <div className="px-3 py-1.5 rounded-xl bg-[#0B0F17]/80 backdrop-blur-md border border-slate-800/80 text-[10px] font-mono text-slate-400">
+      {/* Floating Bottom Right Minimap & Navigation Hint */}
+      <div className="absolute bottom-4 right-4 z-20 pointer-events-auto flex flex-col items-end gap-2">
+        {showMinimap && (
+          <SpatialMinimap
+            groupConfig={GROUP_CONFIG}
+            selectedGroup={selectedGroup}
+            onSelectGroup={(grp) => {
+              setSelectedGroup(grp);
+              const hubNode = fullGraph.nodes.find((n) => n.id === `hub-${grp.toLowerCase()}`);
+              if (hubNode) handleFocusNode(hubNode);
+            }}
+            onResetCamera={handleResetCamera}
+          />
+        )}
+        <div className="px-3 py-1.5 rounded-xl bg-[#0B0F17]/80 backdrop-blur-md border border-slate-800/80 text-[10px] font-mono text-slate-400 hidden md:block">
           Double-click to focus &bull; Drag to rotate &bull; Scroll to zoom LOD
         </div>
       </div>
+
+      {/* Spatial Graph Analytics Overlay */}
+      {showAnalytics && (
+        <SpatialAnalyticsOverlay
+          stats={fullGraph.stats}
+          fullGraph={fullGraph}
+          onSelectNode={(n) => {
+            setSelectedNode(n);
+            handleFocusNode(n);
+          }}
+          onClose={() => setShowAnalytics(false)}
+        />
+      )}
 
       {/* Side Information Panel */}
       <div className="absolute top-0 right-0 bottom-0 z-30 pointer-events-auto">

@@ -217,7 +217,7 @@ export class DevPilotSidebarProvider implements vscode.WebviewViewProvider {
     }
     .status-dot.online { background: #34d399; box-shadow: 0 0 6px #34d399; }
     .status-dot.offline { background: #f43f5e; }
-    
+
     .quick-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -241,7 +241,7 @@ export class DevPilotSidebarProvider implements vscode.WebviewViewProvider {
       background: var(--vscode-button-secondaryHoverBackground, #1e293b);
       color: #fff;
     }
-    
+
     .chat-messages {
       flex: 1;
       overflow-y: auto;
@@ -280,7 +280,7 @@ export class DevPilotSidebarProvider implements vscode.WebviewViewProvider {
       margin-top: 4px;
       margin-right: 4px;
     }
-    
+
     .input-box {
       border-top: 1px solid var(--vscode-panel-border, #1e293b);
       padding-top: 8px;

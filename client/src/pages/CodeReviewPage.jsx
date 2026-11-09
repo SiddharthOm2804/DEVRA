@@ -41,10 +41,10 @@ const PRESET_TEMPLATES = [
     code: `async function handleUserLogin(req, res) {
   var jwtSecret = "sk_live_secret_key_8833119944";
   var command = req.body.action;
-  
+
   // Vulnerable dynamic execution
   var payload = eval(command);
-  
+
   if (payload === NaN) {
     return res.status(400).send("NaN token");
   }
@@ -52,7 +52,7 @@ const PRESET_TEMPLATES = [
   // Blocking file I/O
   const fs = require('fs');
   fs.writeFileSync('/tmp/audit.log', JSON.stringify(payload));
-  
+
   return res.json({ status: "success", data: payload });
 }`
   },

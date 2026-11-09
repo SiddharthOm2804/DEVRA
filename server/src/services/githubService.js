@@ -414,4 +414,3 @@ export const createPullRequestComment = async (owner, repo, pullNumber, commentB
     return { success: true, simulated: true, error: err.message };
   }
 };
-

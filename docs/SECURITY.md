@@ -1,7 +1,7 @@
 # DEVRA Security Architecture & Disclosure Policy
 
-**Last Updated:** October 2026 (Phase 7 Release Hardening)  
-**Security Status:** Audited & Hardened  
+**Last Updated:** October 2026 (Phase 7 Release Hardening)
+**Security Status:** Audited & Hardened
 
 ---
 

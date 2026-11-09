@@ -20,7 +20,7 @@ export function AuthProvider({ children }) {
       const urlParams = new URLSearchParams(window.location.search);
       const ticket = urlParams.get("ticket");
       const oauthToken = urlParams.get("oauth_token");
-      
+
       let effectiveToken = localStorage.getItem("devra_token") || sessionStorage.getItem("devra_token");
 
       if (ticket) {

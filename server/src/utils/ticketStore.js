@@ -22,8 +22,8 @@ class TicketStore {
   /**
    * Create a single-use ticket for arbitrary payload data (e.g. JWT token or user/session binding)
    * Supports synchronous return for backward compatibility, while saving to Redis asynchronously if available.
-   * @param {Object} payload 
-   * @param {number} [ttlMs] 
+   * @param {Object} payload
+   * @param {number} [ttlMs]
    * @returns {string} ticket id
    */
   createTicket(payload, ttlMs = this.defaultTtlMs) {
@@ -110,7 +110,7 @@ class TicketStore {
    * Consume a single-use ticket synchronously.
    * Immediately burns the ticket (single-use replay resistance).
    * Works with in-memory map and triggers atomic Redis deletion.
-   * @param {string} ticketId 
+   * @param {string} ticketId
    * @returns {Object|null}
    */
   consumeTicket(ticketId) {

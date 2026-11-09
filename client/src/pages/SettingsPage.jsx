@@ -130,7 +130,7 @@ export default function SettingsPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 font-mono focus:outline-none focus:border-brand-lavender focus:bg-white transition-colors"
+                className="w-full px-3.5 py-2 rounded-lg bg-abyssal-surface border border-abyssal-border text-xs text-abyssal-ivory font-mono focus:outline-none focus:border-abyssal-jade focus:bg-abyssal-surface transition-colors"
               />
             </div>
 
@@ -140,7 +140,7 @@ export default function SettingsPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 font-mono focus:outline-none focus:border-brand-lavender focus:bg-white transition-colors"
+                className="w-full px-3.5 py-2 rounded-lg bg-abyssal-surface border border-abyssal-border text-xs text-abyssal-ivory font-mono focus:outline-none focus:border-abyssal-jade focus:bg-abyssal-surface transition-colors"
               />
             </div>
           </div>

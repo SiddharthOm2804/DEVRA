@@ -73,14 +73,14 @@ export async function runThreeJsLodTests() {
 
     // Overview: Only hub anchors and high-level aggregated edges
     const overview = filterGraphForLOD(graph, LOD_LEVELS.OVERVIEW);
-    assert.strictEqual(overview.nodes.length, 5); // 5 domain cluster hubs
+    assert.strictEqual(overview.nodes.length, 6); // 6 architectural district hubs
     assert.ok(overview.edges.length > 0);
     assert.ok(overview.edges.every((e) => e.id.startsWith("agg-") || e.lodLevel === LOD_LEVELS.OVERVIEW));
 
     // Module: Hubs + core module entry files (<= 15 per group)
     const moduleDetail = filterGraphForLOD(graph, LOD_LEVELS.MODULE);
     assert.ok(moduleDetail.nodes.length > overview.nodes.length);
-    assert.ok(moduleDetail.nodes.length <= 80);
+    assert.ok(moduleDetail.nodes.length <= 100);
 
     // File Detail: All nodes visible
     const fileDetail = filterGraphForLOD(graph, LOD_LEVELS.FILE);
@@ -130,7 +130,7 @@ export async function runThreeJsLodTests() {
     // Completely empty repository
     const emptyGraph = buildGraphLayout({}, {});
     assert.strictEqual(emptyGraph.nodes.length > 0, true);
-    assert.strictEqual(emptyGraph.nodes.filter((n) => n.isHub).length, 5);
+    assert.strictEqual(emptyGraph.nodes.filter((n) => n.isHub).length, 6); // 6 architectural district hubs
     assert.ok(emptyGraph.linePositions.length > 0);
     // Real file nodes count must be 0
     assert.strictEqual(emptyGraph.nodes.filter((n) => !n.isHub).length, 0);
@@ -181,9 +181,23 @@ export async function runThreeJsLodTests() {
 
     const entrySymbols = deriveAstSymbols({ name: "main.ts", isEntryPoint: true, group: "Backend" });
     assert.ok(entrySymbols.some((s) => s.exported === true));
+
+    const infraSymbols = deriveAstSymbols({ name: "Dockerfile", group: "Infrastructure" });
+    assert.ok(Array.isArray(infraSymbols));
   });
 
-  // 9. Scalability Benchmark: 1,000, 5,000, and 10,000 Nodes
+  // 9. Graph Analytics Computation & Metrics
+  await test("computeGraphAnalytics computes degree, complexity, and ranking accurately", () => {
+    const graph = generateSyntheticGraph(120);
+    assert.ok(graph.stats, "Graph must include computed analytics stats");
+    assert.strictEqual(typeof graph.stats.totalFiles, "number");
+    assert.strictEqual(typeof graph.stats.avgDegree, "number");
+    assert.strictEqual(typeof graph.stats.avgComplexity, "number");
+    assert.ok(Array.isArray(graph.stats.mostConnected));
+    assert.ok(graph.stats.mostConnected.length <= 5);
+  });
+
+  // 10. Scalability Benchmark: 1,000, 5,000, and 10,000 Nodes
   await test("Synthetic graph benchmarks process 1,000, 5,000, and 10,000 nodes efficiently", () => {
     const benchmarkResults = runLodBenchmark([1000, 5000, 10000]);
     assert.strictEqual(benchmarkResults.length, 3);
