@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const apiPort = process.env.PLAYWRIGHT_API_PORT || "5000";
+const apiPort = process.env.PLAYWRIGHT_API_PORT || "5001";
 const clientPort = process.env.PLAYWRIGHT_CLIENT_PORT || "5173";
 
 /**

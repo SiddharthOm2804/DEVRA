@@ -8,6 +8,7 @@ import {
   GitBranch,
   Check,
   ChevronRight,
+  ChevronDown,
   Shield,
   ShieldAlert,
   Layers,

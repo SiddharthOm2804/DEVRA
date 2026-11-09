@@ -192,6 +192,18 @@ export async function setupDeterministicMockApi(page, user = TEST_USERS.ARCHITEC
     });
   });
 
+  // Stream ticket endpoint
+  await page.route("**/api/auth/stream-ticket", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        ticket: "test-stream-ticket-mock"
+      })
+    });
+  });
+
   // Login endpoint
   await page.route("**/api/auth/login", async (route) => {
     const postData = route.request().postDataJSON() || {};
