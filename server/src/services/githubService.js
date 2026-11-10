@@ -414,3 +414,57 @@ export const createPullRequestComment = async (owner, repo, pullNumber, commentB
     return { success: true, simulated: true, error: err.message };
   }
 };
+
+/**
+ * Fetch a single file's content and metadata from GitHub repository (or fallback)
+ */
+export const getRepositoryFileContent = async ({
+  owner,
+  repo,
+  path: filePath,
+  ref = "main",
+  accessToken = null
+}) => {
+  const cleanPath = filePath.replace(/^\/+/, "");
+  const headers = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "Devra-Developer-Platform"
+  };
+  if (accessToken && (accessToken.startsWith("gh") || accessToken.startsWith("github_pat_"))) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const encodedPath = cleanPath
+    .split("/")
+    .map((seg) => encodeURIComponent(seg))
+    .join("/");
+
+  const response = await axios.get(
+    `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodedPath}?ref=${encodeURIComponent(ref)}`,
+    { headers, timeout: 10000 }
+  );
+
+  if (Array.isArray(response.data)) {
+    const dirErr = new Error(`Path "${cleanPath}" is a directory, not a file.`);
+    dirErr.status = 400;
+    throw dirErr;
+  }
+
+  const fileData = response.data;
+  const isBinary = fileData.encoding !== "base64" && !fileData.content;
+  let content = "";
+  if (fileData.encoding === "base64" && typeof fileData.content === "string") {
+    content = Buffer.from(fileData.content, "base64").toString("utf8");
+  }
+
+  return {
+    name: fileData.name || cleanPath.split("/").pop(),
+    path: cleanPath,
+    sha: fileData.sha,
+    size: fileData.size || Buffer.byteLength(content, "utf8"),
+    content,
+    isBinary,
+    ref
+  };
+};
+

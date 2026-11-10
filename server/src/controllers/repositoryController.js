@@ -3,6 +3,22 @@ import User from "../models/User.js";
 import { config } from "../config/env.js";
 import * as repositoryService from "../services/repositoryService.js";
 import * as githubService from "../services/githubService.js";
+import { detectLanguage } from "../services/codeAnalysisService.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const REPO_ROOT = path.resolve(__dirname, "../../../");
+
+const MAX_PREVIEW_FILE_SIZE = 1 * 1024 * 1024; // 1 MB max for inline source preview
+const BINARY_EXTENSIONS = new Set([
+  "png", "jpg", "jpeg", "gif", "ico", "svg", "webp", "pdf",
+  "zip", "tar", "gz", "7z", "rar", "wasm", "exe", "dll",
+  "so", "dylib", "bin", "woff", "woff2", "ttf", "eot",
+  "mp3", "mp4", "mov", "avi", "iso", "dmg", "jar"
+]);
 
 /**
  * @route   GET /api/repositories
@@ -571,6 +587,213 @@ export const disconnectGithubAccount = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "GitHub account disconnected."
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   GET /api/repositories/:id/files/content
+ * @desc    Fetch individual file content and metadata for 3D explorer / source viewer
+ * @access  Private
+ */
+export const getRepositoryFileContent = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const requestedPath = req.query.path;
+    const requestedRef = req.query.ref;
+
+    if (!requestedPath || typeof requestedPath !== "string" || !requestedPath.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "File path parameter 'path' is required."
+      });
+    }
+
+    const trimmedPath = requestedPath.trim();
+
+    // Prevent path traversal
+    if (
+      trimmedPath.includes("..") ||
+      path.isAbsolute(trimmedPath) ||
+      trimmedPath.startsWith("/") ||
+      trimmedPath.startsWith("\\")
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid file path: path traversal is not permitted."
+      });
+    }
+
+    // Normalize forward slashes
+    const normalizedRelativePath = path.posix.normalize(trimmedPath.replace(/\\/g, "/"));
+    if (normalizedRelativePath.startsWith("..") || normalizedRelativePath === ".") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid file path."
+      });
+    }
+
+    // Prevent access to sensitive secret files
+    const basename = path.posix.basename(normalizedRelativePath);
+    if (
+      basename.startsWith(".env") ||
+      basename === "id_rsa" ||
+      basename === "id_ed25519" ||
+      normalizedRelativePath.includes(".git/")
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Access to sensitive or secret configuration files is restricted."
+      });
+    }
+
+    // Repository access verified by requireRepositoryAccess
+    const repository = req.repository || (await repositoryService.getRepositoryById(req.user._id, id));
+    if (!repository) {
+      return res.status(404).json({
+        success: false,
+        message: "Repository not found."
+      });
+    }
+
+    const effectiveRef = requestedRef || repository.activeBranch || repository.defaultBranch || "main";
+    const ext = (path.posix.extname(normalizedRelativePath).replace(".", "") || "").toLowerCase();
+    const langInfo = detectLanguage(normalizedRelativePath);
+    const isDeclaredBinary = BINARY_EXTENSIONS.has(ext);
+
+    let content = "";
+    let size = 0;
+    let isBinary = isDeclaredBinary;
+    let isTruncated = false;
+    let totalLines = null;
+    let lineCount = null;
+
+    // Strategy 1: Check if this file exists in the active workspace repository
+    const localCandidatePath = path.resolve(REPO_ROOT, normalizedRelativePath);
+    let handledLocally = false;
+
+    if (
+      localCandidatePath.startsWith(REPO_ROOT) &&
+      fs.existsSync(localCandidatePath)
+    ) {
+      try {
+        const stats = fs.statSync(localCandidatePath);
+        if (stats.isFile()) {
+          handledLocally = true;
+          size = stats.size;
+
+          if (isDeclaredBinary) {
+            isBinary = true;
+          } else if (size > MAX_PREVIEW_FILE_SIZE) {
+            isTruncated = true;
+            // Read first 256KB for preview
+            const fd = fs.openSync(localCandidatePath, "r");
+            const buf = Buffer.alloc(256 * 1024);
+            const bytesRead = fs.readSync(fd, buf, 0, buf.length, 0);
+            fs.closeSync(fd);
+            content = buf.slice(0, bytesRead).toString("utf8");
+          } else {
+            content = fs.readFileSync(localCandidatePath, "utf8");
+            // Check for null bytes indicating binary content
+            if (content.includes("\0")) {
+              isBinary = true;
+              content = "";
+            }
+          }
+        }
+      } catch (err) {
+        handledLocally = false;
+      }
+    }
+
+    // Strategy 2: If not found in local workspace or repository is connected to remote GitHub
+    if (!handledLocally) {
+      const isGithubRepo = Boolean(
+        repository.githubId || (repository.owner?.login && repository.name)
+      );
+
+      if (isGithubRepo && repository.owner?.login) {
+        try {
+          const user = await User.findById(req.user._id).select("+githubAccessToken");
+          const ghResult = await githubService.getRepositoryFileContent({
+            owner: repository.owner.login,
+            repo: repository.name,
+            path: normalizedRelativePath,
+            ref: effectiveRef,
+            accessToken: user?.githubAccessToken
+          });
+
+          size = ghResult.size || 0;
+          if (ghResult.isBinary || isDeclaredBinary) {
+            isBinary = true;
+            content = "";
+          } else if (size > MAX_PREVIEW_FILE_SIZE) {
+            isTruncated = true;
+            content = (ghResult.content || "").slice(0, 256 * 1024);
+          } else {
+            content = ghResult.content || "";
+            if (content.includes("\0")) {
+              isBinary = true;
+              content = "";
+            }
+          }
+        } catch (ghErr) {
+          if (ghErr.response?.status === 404 || ghErr.status === 404) {
+            return res.status(404).json({
+              success: false,
+              message: `This file could not be found in the selected repository reference (${effectiveRef}).`
+            });
+          }
+          if (ghErr.response?.status === 401 || ghErr.response?.status === 403) {
+            return res.status(403).json({
+              success: false,
+              message: "Access to this repository source file was denied by the upstream provider."
+            });
+          }
+          return res.status(502).json({
+            success: false,
+            message: `Failed to retrieve file from GitHub: ${ghErr.message}`
+          });
+        }
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: `This file could not be found in the selected repository reference (${effectiveRef}).`
+        });
+      }
+    }
+
+    if (!isBinary && typeof content === "string") {
+      if (content.length === 0) {
+        totalLines = 0;
+        lineCount = 0;
+      } else {
+        // Calculate physical line count handling CRLF and LF correctly
+        const rawLines = content.split(/\r\n|\r|\n/);
+        totalLines = rawLines.length;
+        lineCount = rawLines.filter((l) => l.trim().length > 0).length;
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      file: {
+        name: basename,
+        path: normalizedRelativePath,
+        extension: ext,
+        language: langInfo.name,
+        languageColor: langInfo.color,
+        size,
+        content: isBinary ? "" : content,
+        totalLines,
+        lineCount,
+        ref: effectiveRef,
+        isBinary,
+        isTruncated,
+        repositoryId: repository._id
+      }
     });
   } catch (error) {
     next(error);

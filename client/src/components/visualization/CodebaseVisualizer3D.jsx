@@ -611,9 +611,9 @@ export default function CodebaseVisualizer3D({
       }`}
     >
       {/* Top Floating Controls Bar */}
-      <div className="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
+      <div className="absolute top-4 left-4 right-4 z-40 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
         {/* Left: Mode Toggle & Group Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2 pointer-events-auto bg-[#0B0F17]/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 shadow-xl">
+        <div className="flex flex-wrap items-center gap-2 pointer-events-auto bg-[#0B0F17]/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 shadow-xl relative z-40">
           {/* Mode Switcher: Architecture | Dependencies | Health */}
           <div className="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-lg border border-slate-800/80">
             {["Architecture", "Dependencies", "Health"].map((mode) => (
@@ -692,11 +692,56 @@ export default function CodebaseVisualizer3D({
                 ✕
               </button>
             )}
+
+            {/* Matching search dropdown list for direct keyboard/mouse file selection */}
+            {searchQuery.trim().length > 1 && visibleNodes.length > 0 && (
+              <div
+                className="absolute top-full left-0 mt-2 w-64 max-h-56 overflow-y-auto rounded-xl bg-[#0B0F17] border border-slate-700 shadow-2xl p-1 space-y-0.5 z-[100] backdrop-blur-xl"
+                data-testid="search-results-dropdown"
+              >
+                <span className="text-[10px] text-slate-500 px-2 py-1 block uppercase font-mono">
+                  Matching AST Nodes ({visibleNodes.length})
+                </span>
+                {visibleNodes.slice(0, 8).map((node) => (
+                  <button
+                    key={node.id}
+                    type="button"
+                    data-testid={`search-node-${node.id}`}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedNode(node);
+                      handleFocusNode(node);
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedNode(node);
+                      handleFocusNode(node);
+                    }}
+                    className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-slate-800 text-xs font-mono flex items-center justify-between text-slate-200 hover:text-sky-300 transition-colors group cursor-pointer relative z-[100]"
+                  >
+                    <span className="truncate max-w-[170px]" title={node.name}>
+                      {node.name}
+                    </span>
+                    <span
+                      className="text-[9px] px-1 rounded uppercase shrink-0"
+                      style={{
+                        backgroundColor: `${node.groupColor}20`,
+                        color: node.groupColor
+                      }}
+                    >
+                      {node.group}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right: LOD Level Selector & Camera Action Tools */}
-        <div className="flex items-center gap-1.5 pointer-events-auto bg-[#0B0F17]/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 shadow-xl">
+        <div className="flex items-center gap-1.5 pointer-events-auto bg-[#0B0F17]/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 shadow-xl relative z-10">
           {/* LOD Level Pill / Manual Selector */}
           <div className="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-lg border border-slate-800/80 mr-1">
             <button
@@ -817,7 +862,12 @@ export default function CodebaseVisualizer3D({
             alpha: false,
             powerPreference: "high-performance"
           }}
-          onPointerMissed={() => setSelectedNode(null)}
+          onPointerMissed={(e) => {
+            // Only deselect if clicked directly on canvas background, not on UI overlays
+            if (e.target?.tagName?.toLowerCase() === "canvas") {
+              setSelectedNode(null);
+            }
+          }}
         >
           {/* Background color */}
           <color attach="background" args={["#070A0F"]} />
@@ -1018,6 +1068,8 @@ export default function CodebaseVisualizer3D({
           nodesById={fullGraph.nodesById}
           edges={visibleEdges}
           groupConfig={GROUP_CONFIG}
+          repositoryId={repo?._id || repo?.id || analysis?.repositoryId}
+          activeBranch={repo?.activeBranch || repo?.defaultBranch || "main"}
         />
       </div>
     </div>

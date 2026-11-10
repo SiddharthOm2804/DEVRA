@@ -10,7 +10,8 @@ import {
   getAvailableGithubRepos,
   connectGithubRepo,
   connectGithubAccount,
-  disconnectGithubAccount
+  disconnectGithubAccount,
+  getRepositoryFileContent
 } from "../controllers/repositoryController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import {
@@ -42,5 +43,8 @@ router.route("/:id")
   .delete(requireRepositoryAccess(PERMISSIONS.REPO_DELETE), deleteRepository);
 
 router.post("/:id/sync", requireRepositoryAccess(PERMISSIONS.REPO_SYNC), syncRepository);
+
+// File Content Endpoint for 3D Visualizer / Codebase Explorer
+router.get("/:id/files/content", requireRepositoryAccess(PERMISSIONS.REPO_READ), getRepositoryFileContent);
 
 export default router;

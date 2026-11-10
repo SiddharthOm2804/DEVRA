@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FileCode,
   AlertTriangle,
@@ -13,10 +13,16 @@ import {
   ShieldAlert,
   Hash,
   ExternalLink,
-  GitCommit
+  GitCommit,
+  Code2
 } from "lucide-react";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
+import SourceCodeViewer from "../ui/SourceCodeViewer";
+import { repositoryApi } from "../../services/api";
+
+// LRU / bounded cache for source files (max 30 items)
+const fileSourceCache = new Map();
 
 export default function NodeDetailsPanel({
   selectedNode,
@@ -25,8 +31,115 @@ export default function NodeDetailsPanel({
   onSelectNode,
   nodesById,
   edges,
-  groupConfig
+  groupConfig,
+  repositoryId,
+  activeBranch = "main"
 }) {
+  const [sourceFile, setSourceFile] = useState(null);
+  const [loadingSource, setLoadingSource] = useState(false);
+  const [sourceError, setSourceError] = useState(null);
+  const [targetLine, setTargetLine] = useState(null);
+  const [isViewerExpanded, setIsViewerExpanded] = useState(false);
+
+  const activeRequestRef = useRef(0);
+
+  // Fetch file content whenever selectedNode or repositoryId or activeBranch changes
+  useEffect(() => {
+    // Reset active line and expansion
+    setTargetLine(null);
+    setIsViewerExpanded(false);
+
+    // If node is a hub/cluster anchor or has no path, don't fetch source
+    if (!selectedNode || selectedNode.isHub || !selectedNode.path || selectedNode.path.endsWith("/")) {
+      setSourceFile(null);
+      setLoadingSource(false);
+      setSourceError(null);
+      return;
+    }
+
+    const currentReqId = ++activeRequestRef.current;
+    const cacheKey = `${repositoryId || "active"}:${activeBranch}:${selectedNode.path}`;
+
+    // Check bounded cache
+    if (fileSourceCache.has(cacheKey)) {
+      const cached = fileSourceCache.get(cacheKey);
+      setSourceFile(cached);
+      setLoadingSource(false);
+      setSourceError(null);
+      return;
+    }
+
+    setLoadingSource(true);
+    setSourceError(null);
+    setSourceFile(null);
+
+    const effectiveRepoId = repositoryId || "devra-core";
+
+    repositoryApi
+      .getFileContent(effectiveRepoId, selectedNode.path, activeBranch)
+      .then((res) => {
+        if (activeRequestRef.current !== currentReqId) return; // Discard outdated requests
+
+        if (res.success && res.file) {
+          // Bounded cache maintenance (keep up to 30 files)
+          if (fileSourceCache.size >= 30) {
+            const firstKey = fileSourceCache.keys().next().value;
+            fileSourceCache.delete(firstKey);
+          }
+          fileSourceCache.set(cacheKey, res.file);
+          setSourceFile(res.file);
+        } else {
+          setSourceError(res.message || "Could not retrieve file content.");
+        }
+      })
+      .catch((err) => {
+        if (activeRequestRef.current !== currentReqId) return;
+        const msg =
+          err.response?.data?.message ||
+          (err.response?.status === 404
+            ? "This file could not be found in the selected repository reference."
+            : err.response?.status === 403
+            ? "Access denied. You do not have permission to view this file."
+            : "Failed to load file contents from repository.");
+        setSourceError(msg);
+      })
+      .finally(() => {
+        if (activeRequestRef.current === currentReqId) {
+          setLoadingSource(false);
+        }
+      });
+  }, [selectedNode?.id, selectedNode?.path, repositoryId, activeBranch]);
+
+  const handleRetryFetch = () => {
+    if (!selectedNode?.path) return;
+    const cacheKey = `${repositoryId || "active"}:${activeBranch}:${selectedNode.path}`;
+    fileSourceCache.delete(cacheKey);
+    const currentReqId = ++activeRequestRef.current;
+    setLoadingSource(true);
+    setSourceError(null);
+    const effectiveRepoId = repositoryId || "devra-core";
+
+    repositoryApi
+      .getFileContent(effectiveRepoId, selectedNode.path, activeBranch)
+      .then((res) => {
+        if (activeRequestRef.current !== currentReqId) return;
+        if (res.success && res.file) {
+          fileSourceCache.set(cacheKey, res.file);
+          setSourceFile(res.file);
+        } else {
+          setSourceError(res.message || "Could not retrieve file content.");
+        }
+      })
+      .catch((err) => {
+        if (activeRequestRef.current !== currentReqId) return;
+        setSourceError(err.response?.data?.message || "Failed to load file contents from repository.");
+      })
+      .finally(() => {
+        if (activeRequestRef.current === currentReqId) {
+          setLoadingSource(false);
+        }
+      });
+  };
   if (!selectedNode) {
     return (
       <div className="w-80 sm:w-96 bg-[#0B0F17]/95 backdrop-blur-md border-l border-slate-800 p-5 flex flex-col justify-between h-full text-xs font-mono overflow-y-auto">
@@ -181,9 +294,19 @@ export default function NodeDetailsPanel({
         {/* Primary Metrics Grid */}
         <div className="grid grid-cols-2 gap-2.5">
           <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 space-y-1">
-            <span className="text-[10px] text-slate-500 uppercase block">Lines of Code</span>
+            <span className="text-[10px] text-slate-500 uppercase block">Total Lines</span>
             <span className="text-lg font-bold text-white">
-              {selectedNode.lines?.toLocaleString() || "120"}
+              {loadingSource ? (
+                <span className="text-xs text-sky-400 font-normal animate-pulse">Calculating...</span>
+              ) : sourceFile?.totalLines !== null && sourceFile?.totalLines !== undefined ? (
+                sourceFile.totalLines.toLocaleString()
+              ) : selectedNode.lines !== null && selectedNode.lines !== undefined ? (
+                selectedNode.lines.toLocaleString()
+              ) : sourceError ? (
+                <span className="text-xs text-slate-500 font-normal">Unavailable</span>
+              ) : (
+                <span className="text-xs text-slate-500 font-normal">Unavailable</span>
+              )}
             </span>
           </div>
 
@@ -194,6 +317,71 @@ export default function NodeDetailsPanel({
             </span>
           </div>
         </div>
+
+        {/* Real Source Code Viewer */}
+        {!selectedNode.isHub && selectedNode.path && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-bold">
+                <Code2 className="w-3.5 h-3.5 text-sky-400" />
+                <span>Verified Source Preview</span>
+              </span>
+              {sourceFile?.size !== undefined && (
+                <span className="text-[10px] text-slate-500">
+                  {(sourceFile.size / 1024).toFixed(1)} KB
+                </span>
+              )}
+            </div>
+
+            <SourceCodeViewer
+              file={sourceFile}
+              loading={loadingSource}
+              error={sourceError}
+              onRetry={handleRetryFetch}
+              targetLine={targetLine}
+              isExpanded={isViewerExpanded}
+              onToggleExpand={() => setIsViewerExpanded(!isViewerExpanded)}
+            />
+          </div>
+        )}
+
+        {/* AST Symbols Navigation */}
+        {selectedNode.symbols && selectedNode.symbols.length > 0 && (
+          <div className="space-y-2">
+            <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1 font-semibold">
+              <Hash className="w-3.5 h-3.5 text-sky-400" />
+              <span>AST Symbols &amp; Jump to Line</span>
+            </span>
+            <div className="space-y-1">
+              {selectedNode.symbols.map((sym, idx) => {
+                const startLine = sym.lines ? parseInt(sym.lines.split("-")[0], 10) : null;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      if (startLine) setTargetLine(startLine);
+                    }}
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/80 text-left flex items-center justify-between text-[11px] group transition-colors"
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="text-[9px] px-1 rounded bg-slate-800 text-sky-400 font-mono">
+                        {sym.kind}
+                      </span>
+                      <span className="text-slate-200 group-hover:text-sky-300 font-mono truncate">
+                        {sym.name}
+                      </span>
+                    </div>
+                    {sym.lines && (
+                      <span className="text-[10px] font-mono text-slate-500 group-hover:text-slate-400">
+                        L{sym.lines}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Complexity / Importance Gauge */}
         <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">

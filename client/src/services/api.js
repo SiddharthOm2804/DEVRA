@@ -151,6 +151,12 @@ export const repositoryApi = {
   disconnectGithubAccount: async () => {
     const response = await apiClient.post("/api/repositories/github/disconnect");
     return response.data;
+  },
+  getFileContent: async (repositoryId, filePath, ref) => {
+    const params = { path: filePath };
+    if (ref) params.ref = ref;
+    const response = await apiClient.get(`/api/repositories/${repositoryId}/files/content`, { params });
+    return response.data;
   }
 };
 

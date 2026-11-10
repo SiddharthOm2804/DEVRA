@@ -79,6 +79,7 @@ export const MOCK_REPOSITORIES = [
     filesCount: 142,
     fileTree: [
       { path: "src/server.ts", name: "server.ts", extension: "ts", lines: 280, isEntryPoint: true },
+      { path: "client/src/components/ui/DevraLogo.jsx", name: "DevraLogo.jsx", extension: "jsx", lines: 93 },
       { path: "src/controllers/authController.ts", name: "authController.ts", extension: "ts", lines: 240 },
       { path: "src/services/treeSitterParser.ts", name: "treeSitterParser.ts", extension: "ts", lines: 320 },
       { path: "src/services/vectorStore.ts", name: "vectorStore.ts", extension: "ts", lines: 410 },
@@ -264,6 +265,50 @@ export async function setupDeterministicMockApi(page, user = TEST_USERS.ARCHITEC
         body: JSON.stringify({
           success: true,
           repositories: MOCK_REPOSITORIES
+        })
+      });
+      return;
+    }
+
+    // Single file content endpoint (e.g. /api/repositories/:id/files/content?path=...)
+    if (url.includes("/files/content")) {
+      const urlObj = new URL(url, "http://localhost:5001");
+      const filePath = urlObj.searchParams.get("path") || "src/server.ts";
+      const ref = urlObj.searchParams.get("ref") || "main";
+      const fileName = filePath.split("/").pop();
+      const ext = (fileName.split(".").pop() || "").toLowerCase();
+
+      let sampleContent = `import express from "express";\n\nconst app = express();\nconst PORT = process.env.PORT || 5001;\n\napp.get("/health", (req, res) => {\n  res.json({ status: "healthy", timestamp: Date.now() });\n});\n\napp.listen(PORT, () => {\n  console.log("Server listening on port " + PORT);\n});\n`;
+
+      if (filePath.includes("DevraLogo.jsx")) {
+        sampleContent = `import React from "react";\n\nexport default function DevraLogo({ size = "md" }) {\n  return (\n    <div className="flex items-center gap-2 font-mono font-bold text-sky-400">\n      <span>DEVRA</span>\n    </div>\n  );\n}\n`;
+      } else if (filePath.includes("empty")) {
+        sampleContent = "";
+      }
+
+      const totalLines = sampleContent ? sampleContent.split(/\r\n|\r|\n/).length : 0;
+      const lineCount = sampleContent ? sampleContent.split(/\r\n|\r|\n/).filter(l => l.trim().length > 0).length : 0;
+
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          file: {
+            name: fileName,
+            path: filePath,
+            extension: ext,
+            language: ext === "ts" ? "TypeScript" : ext === "jsx" || ext === "js" ? "JavaScript" : "Plain Text",
+            languageColor: "#3178c6",
+            size: Buffer.byteLength(sampleContent, "utf8"),
+            content: sampleContent,
+            totalLines,
+            lineCount,
+            ref,
+            isBinary: false,
+            isTruncated: false,
+            repositoryId: "repo-core-01"
+          }
         })
       });
       return;

@@ -15,6 +15,7 @@ import { runMongoAuthIntegrationTests } from "./tests/mongoAuth.test.js";
 import { runSecurityRemediationTests } from "./tests/securityRemediation.test.js";
 import { runTruthfulnessTests } from "./tests/truthfulness.test.js";
 import { runProtocolSecurityTests } from "./tests/protocolSecurity.test.js";
+import { runSourceCodeViewerTests } from "./tests/sourceCodeViewer.test.js";
 import { eventBus } from "./src/services/realtime/eventBus.js";
 
 async function runTests() {
@@ -190,6 +191,11 @@ async function runTests() {
   const protocolResults = await runProtocolSecurityTests();
   passed += protocolResults.passed;
   failed += protocolResults.failed;
+
+  // Run 3D Explorer Source Code Viewer Suite
+  const sourceCodeResults = await runSourceCodeViewerTests();
+  passed += sourceCodeResults.passed;
+  failed += sourceCodeResults.failed;
 
   await eventBus.close();
 

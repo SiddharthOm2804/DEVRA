@@ -101,4 +101,29 @@ test.describe("Three.js Level of Detail 3D Visualizer Workflows", () => {
     await expect(allFilter).toBeVisible();
     await allFilter.click();
   });
+
+  test("Selecting file node opens side panel and displays real source code viewer with line numbers", async ({ page }) => {
+    await expect(page.locator("canvas")).toBeVisible({ timeout: 20000 });
+
+    // Open side panel by searching for DevraLogo
+    const searchInput = page.getByPlaceholder(/Search 3D AST/i);
+    await searchInput.fill("DevraLogo");
+
+    // Click matching AST Node button
+    const matchBtn = page.getByRole("button", { name: /DevraLogo\.jsx/i }).first();
+    await expect(matchBtn).toBeVisible({ timeout: 5000 });
+    await matchBtn.click();
+
+    // Verify side panel opens with DevraLogo details
+    await expect(page.getByText("DevraLogo.jsx").first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("client/src/components/ui/DevraLogo.jsx", { exact: true })).toBeVisible({ timeout: 15000 });
+
+    // Verify real source code preview is rendered
+    await expect(page.getByText(/Verified Source Preview/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/export default function DevraLogo/i)).toBeVisible();
+
+    // Verify accurate line numbers are rendered
+    await expect(page.getByText("Total Lines", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Copy/i }).first()).toBeVisible();
+  });
 });
