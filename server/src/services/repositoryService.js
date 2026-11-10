@@ -155,7 +155,7 @@ export const seedUserRepositories = async (userId) => {
  * Get all repositories for a user with optional search and language filter
  */
 export const getUserRepositories = async (userId, options = {}) => {
-  const { search, language, sort = "-updatedAt" } = options;
+  const { search, language, sort = "-updatedAt", limit = 100, page = 1 } = options;
 
   const query = { userId };
 
@@ -170,8 +170,22 @@ export const getUserRepositories = async (userId, options = {}) => {
     query.language = { $regex: new RegExp(`^${language}$`, "i") };
   }
 
-  // Fetch user repositories; genuine empty state returned when count is 0
-  return await Repository.find(query).sort(sort);
+  const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 100, 1), 250);
+  const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+  const skip = (parsedPage - 1) * parsedLimit;
+
+  // Fetch user repositories with safe pagination ceiling; genuine empty state returned when count is 0
+  let queryChain = Repository.find(query);
+  if (typeof queryChain.sort === "function") {
+    queryChain = queryChain.sort(sort);
+  }
+  if (typeof queryChain.skip === "function") {
+    queryChain = queryChain.skip(skip);
+  }
+  if (typeof queryChain.limit === "function") {
+    queryChain = queryChain.limit(parsedLimit);
+  }
+  return await queryChain;
 };
 
 

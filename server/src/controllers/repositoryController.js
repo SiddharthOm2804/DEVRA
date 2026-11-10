@@ -27,11 +27,13 @@ const BINARY_EXTENSIONS = new Set([
  */
 export const getRepositories = async (req, res, next) => {
   try {
-    const { search, language, sort } = req.query;
+    const { search, language, sort, limit, page } = req.query;
     const repositories = await repositoryService.getUserRepositories(req.user._id, {
       search,
       language,
-      sort
+      sort,
+      limit,
+      page
     });
 
     res.status(200).json({
@@ -601,7 +603,7 @@ export const disconnectGithubAccount = async (req, res, next) => {
 export const getRepositoryFileContent = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const requestedPath = req.query.path;
+    const requestedPath = req.query.path || req.params.filePath;
     const requestedRef = req.query.ref;
 
     if (!requestedPath || typeof requestedPath !== "string" || !requestedPath.trim()) {

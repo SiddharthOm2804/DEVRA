@@ -186,6 +186,22 @@ export async function runSourceCodeViewerTests() {
     }
   });
 
+  await test("[Source Code] Correctly returns content when filePath is provided in route params (:filePath)", async () => {
+    const req = {
+      params: { id: "repo-core-01", filePath: "client/src/components/ui/DevraLogo.jsx" },
+      query: {},
+      user: { _id: "usr-1", role: "developer" },
+      repository: mockRepo
+    };
+    const res = createMockRes();
+    await getRepositoryFileContent(req, res, () => {});
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.jsonData?.success, true);
+    assert.strictEqual(res.jsonData?.file?.name, "DevraLogo.jsx");
+    assert.match(res.jsonData?.file?.content, /DevraLogo/);
+  });
+
   return { passed, failed };
 }
 

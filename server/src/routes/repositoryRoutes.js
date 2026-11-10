@@ -44,7 +44,8 @@ router.route("/:id")
 
 router.post("/:id/sync", requireRepositoryAccess(PERMISSIONS.REPO_SYNC), syncRepository);
 
-// File Content Endpoint for 3D Visualizer / Codebase Explorer
+// File Content Endpoint for 3D Visualizer / Codebase Explorer (supports /files/content and /files/:filePath(*))
 router.get("/:id/files/content", requireRepositoryAccess(PERMISSIONS.REPO_READ), getRepositoryFileContent);
+router.get("/:id/files/:filePath(*)", requireRepositoryAccess(PERMISSIONS.REPO_READ), getRepositoryFileContent);
 
 export default router;
