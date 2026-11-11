@@ -22,7 +22,7 @@ import {
   Layers
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { repositoryApi } from "../services/api";
+import { repositoryApi, reviewApi } from "../services/api";
 import Badge from "../components/ui/Badge";
 import DevraLogo from "../components/ui/DevraLogo";
 import PageTransition from "../components/ui/PageTransition";
@@ -35,26 +35,39 @@ export default function AppLayout({ children }) {
   const [repoDropdownOpen, setRepoDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [userRepos, setUserRepos] = useState([]);
+  const [reviewsCount, setReviewsCount] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
-    const fetchRepos = async () => {
+    const fetchWorkspaceData = async () => {
       try {
-        const res = await repositoryApi.getAll();
-        if (isMounted && res.success && Array.isArray(res.repositories)) {
-          setUserRepos(res.repositories);
-          if (res.repositories.length > 0 && (!activeRepo || activeRepo === "devra-core")) {
-            // Synchronize active repo with user's genuine first repository if available
-            setActiveRepo(res.repositories[0].name);
+        const [repoRes, reviewRes] = await Promise.allSettled([
+          repositoryApi.getAll(),
+          reviewApi.getAll({ limit: 100 })
+        ]);
+
+        if (isMounted && repoRes.status === "fulfilled" && repoRes.value?.success && Array.isArray(repoRes.value.repositories)) {
+          setUserRepos(repoRes.value.repositories);
+          if (repoRes.value.repositories.length > 0 && (!activeRepo || activeRepo === "devra-core")) {
+            setActiveRepo(repoRes.value.repositories[0].name);
           }
+        }
+
+        if (isMounted && reviewRes.status === "fulfilled" && reviewRes.value?.success) {
+          const count = Array.isArray(reviewRes.value.reviews)
+            ? reviewRes.value.reviews.length
+            : typeof reviewRes.value.total === "number"
+            ? reviewRes.value.total
+            : null;
+          setReviewsCount(count);
         }
       } catch (err) {
         if (isMounted) setUserRepos([]);
       }
     };
-    fetchRepos();
+    fetchWorkspaceData();
     return () => { isMounted = false; };
-  }, []);
+  }, [location.pathname]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -74,8 +87,18 @@ export default function AppLayout({ children }) {
 
   const navItems = [
     { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { label: "Repositories", path: "/repositories", icon: FolderGit2, badge: "14" },
-    { label: "Code Reviews", path: "/reviews", icon: GitPullRequest, badge: "3" },
+    {
+      label: "Repositories",
+      path: "/repositories",
+      icon: FolderGit2,
+      badge: userRepos.length > 0 ? String(userRepos.length) : null
+    },
+    {
+      label: "Code Reviews",
+      path: "/reviews",
+      icon: GitPullRequest,
+      badge: reviewsCount !== null && reviewsCount > 0 ? String(reviewsCount) : null
+    },
     { label: "AI Assistant", path: "/chat", icon: MessageSquareCode },
     { label: "Settings", path: "/settings", icon: Settings }
   ];
@@ -245,17 +268,17 @@ export default function AppLayout({ children }) {
                   to={item.path}
                   className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono transition-all duration-150 ${
                     isActive
-                      ? "bg-abyssal-card text-abyssal-jade font-semibold border-l-2 border-abyssal-jade shadow-sm"
-                      : "text-abyssal-secondary hover:text-abyssal-ivory hover:bg-abyssal-surface"
+                      ? "bg-abyssal-card text-abyssal-jade font-semibold border border-abyssal-jade/30 shadow-sm"
+                      : "text-abyssal-secondary hover:text-abyssal-ivory hover:bg-abyssal-surface/60"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Icon className={`w-4 h-4 ${isActive ? "text-abyssal-jade" : "text-abyssal-muted"}`} />
+                    <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-abyssal-jade" : "text-abyssal-muted"}`} />
                     <span>{item.label}</span>
                   </div>
                   {item.badge && (
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${
-                      isActive ? "bg-abyssal-jade/20 text-abyssal-jade" : "bg-abyssal-surface text-abyssal-muted"
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono tabular-nums leading-none ${
+                      isActive ? "bg-abyssal-jade/15 text-abyssal-jade border border-abyssal-jade/30" : "bg-abyssal-surface text-abyssal-muted border border-abyssal-border"
                     }`}>
                       {item.badge}
                     </span>
@@ -313,15 +336,15 @@ export default function AppLayout({ children }) {
                       onClick={() => setMobileMenuOpen(false)}
                       aria-current={isActive ? "page" : undefined}
                       className={`flex items-center justify-between p-3 rounded-lg text-sm font-mono transition-colors duration-200 ${
-                        isActive ? "bg-abyssal-card text-abyssal-jade font-semibold" : "text-abyssal-secondary hover:bg-abyssal-surface"
+                        isActive ? "bg-abyssal-card text-abyssal-jade font-semibold border border-abyssal-jade/30" : "text-abyssal-secondary hover:bg-abyssal-surface/60"
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <Icon className="w-4 h-4 text-abyssal-jade" />
+                        <Icon className={`w-4 h-4 transition-colors ${isActive ? "text-abyssal-jade" : "text-abyssal-muted"}`} />
                         <span>{item.label}</span>
                       </div>
                       {item.badge && (
-                        <span className="text-xs bg-abyssal-jade/20 text-abyssal-jade px-2 py-0.5 rounded font-mono">
+                        <span className="text-xs bg-abyssal-jade/15 text-abyssal-jade px-2 py-0.5 rounded font-mono border border-abyssal-jade/30 tabular-nums">
                           {item.badge}
                         </span>
                       )}

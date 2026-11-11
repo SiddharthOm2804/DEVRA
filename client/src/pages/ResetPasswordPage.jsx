@@ -94,7 +94,7 @@ export default function ResetPasswordPage() {
               <Button
                 variant="primary"
                 size="md"
-                className="w-full text-xs font-semibold shadow-jade-glow"
+                className="w-full text-xs font-semibold"
                 onClick={() => navigate("/dashboard")}
                 icon={ArrowRight}
               >
@@ -156,7 +156,7 @@ export default function ResetPasswordPage() {
                   variant="primary"
                   size="md"
                   isLoading={submitting}
-                  className="w-full text-xs font-semibold mt-2 shadow-jade-glow"
+                  className="w-full text-xs font-semibold mt-2"
                   icon={ArrowRight}
                 >
                   Update Password

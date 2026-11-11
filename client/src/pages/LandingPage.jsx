@@ -13,7 +13,6 @@ import {
   FileCode,
   ChevronRight,
   ChevronDown,
-  Sparkles,
   Layers,
   Cpu,
   Zap,
@@ -170,7 +169,7 @@ export const requireAuth = (req, res, next) => {
                 {/* Primary Hero Heading */}
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-abyssal-ivory tracking-[-0.055em] leading-[0.98] font-display">
                   The AI Developer{" "}
-                  <span className="bg-gradient-to-r from-abyssal-jade via-abyssal-ivory to-abyssal-citron bg-clip-text text-transparent">
+                  <span className="text-abyssal-jade">
                     Platform.
                   </span>
                 </h1>
@@ -184,7 +183,7 @@ export const requireAuth = (req, res, next) => {
                 {/* Action CTAs */}
                 <div className="flex flex-wrap items-center gap-3.5 pt-1">
                   <Link to="/dashboard">
-                    <Button variant="primary" size="lg" icon={ArrowRight} className="shadow-jade-glow">
+                    <Button variant="primary" size="lg" icon={ArrowRight}>
                       Open Workspace
                     </Button>
                   </Link>
@@ -565,7 +564,7 @@ export const requireAuth = (req, res, next) => {
                   {/* Devra AI Response */}
                   <div className="flex gap-3 max-w-2xl mr-auto">
                     <div className="w-7 h-7 rounded-lg bg-abyssal-card border border-abyssal-border flex items-center justify-center text-abyssal-jade shrink-0">
-                      <Sparkles className="w-3.5 h-3.5" />
+                      <Terminal className="w-3.5 h-3.5" />
                     </div>
                     <div className="p-4 rounded-2xl bg-abyssal-card border border-abyssal-border text-abyssal-secondary space-y-3 leading-relaxed">
                       <p>{chatAnswer.text}</p>
@@ -670,13 +669,13 @@ export const requireAuth = (req, res, next) => {
 
             <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
               <Link to="/dashboard">
-                <Button variant="primary" size="lg" icon={ArrowRight} className="shadow-jade-glow">
+                <Button variant="primary" size="lg" icon={ArrowRight}>
                   Enter Devra Console
                 </Button>
               </Link>
               <Link to="/login">
                 <Button variant="secondary" size="lg">
-                  Sign In With Demo
+                  Sign In
                 </Button>
               </Link>
             </div>

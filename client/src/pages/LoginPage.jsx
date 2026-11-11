@@ -327,7 +327,7 @@ export default function LoginPage() {
                 variant="primary"
                 size="md"
                 isLoading={submitting}
-                className="w-full text-xs font-semibold mt-2 shadow-jade-glow"
+                className="w-full text-xs font-semibold mt-2"
                 icon={ArrowRight}
               >
                 Sign In to Devra
@@ -411,7 +411,7 @@ export default function LoginPage() {
                         variant="primary"
                         size="md"
                         isLoading={forgotSubmitting}
-                        className="flex-1 text-xs font-semibold shadow-jade-glow"
+                        className="flex-1 text-xs font-semibold"
                       >
                         Send Instructions
                       </Button>

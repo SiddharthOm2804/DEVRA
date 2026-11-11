@@ -14,7 +14,6 @@ import {
   Terminal,
   ExternalLink,
   ChevronRight,
-  Sparkles,
   Server,
   Play,
   Network,
@@ -131,7 +130,7 @@ export default function DashboardPage() {
           </Button>
 
           <Link to="/reviews">
-            <Button variant="primary" size="sm" icon={GitPullRequest} className="shadow-jade-glow">
+            <Button variant="primary" size="sm" icon={GitPullRequest}>
               New PR Review
             </Button>
           </Link>
@@ -139,14 +138,14 @@ export default function DashboardPage() {
       </div>
 
       {/* Beginner quick start */}
-      <section className="rounded-2xl border border-abyssal-jade/20 bg-gradient-to-br from-abyssal-card via-abyssal-card to-abyssal-jade/[0.06] p-5 sm:p-6 space-y-5">
+      <section className="rounded-2xl border border-abyssal-border bg-abyssal-card p-5 sm:p-6 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
           <div>
-            <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-abyssal-jade">New here?</p>
+            <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-abyssal-jade">Getting Started</p>
             <h2 className="mt-1 text-xl font-bold text-abyssal-ivory">Start with these three steps</h2>
           </div>
           <p className="max-w-xl text-xs text-abyssal-secondary leading-relaxed">
-            You can explore Devra without knowing the technical terms. Connect a codebase, open it, then try a review or ask a question.
+            Connect a codebase, explore files & architecture in 3D, and run automated reviews or architectural chat queries.
           </p>
         </div>
 
@@ -174,7 +173,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-abyssal-border/70 pt-4">
-          <p className="text-xs text-abyssal-muted leading-relaxed"><span className="font-semibold text-abyssal-citron">Demo data:</span> dashboard scores, review examples, and activity may be sample content; check a repository’s own page for its analysis.</p>
+          <p className="text-xs text-abyssal-muted leading-relaxed">Repository metrics, architectural reviews, and activity live overview.</p>
           <Link to="/chat" className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-abyssal-jade hover:text-abyssal-ivory">Ask Devra a question <ArrowUpRight className="h-3.5 w-3.5" /></Link>
         </div>
       </section>
@@ -456,9 +455,9 @@ export default function DashboardPage() {
                       <div
                         className={`h-full rounded-full ${
                           typeof repo.health === "number" && repo.health > 92
-                            ? "bg-abyssal-jade shadow-jade-glow"
+                            ? "bg-abyssal-jade"
                             : typeof repo.health === "number"
-                            ? "bg-abyssal-citron shadow-citron-glow"
+                            ? "bg-abyssal-citron"
                             : "bg-abyssal-surface/30"
                         }`}
                         style={{ width: typeof repo.health === "number" ? `${repo.health}%` : "0%" }}
@@ -481,9 +480,9 @@ export default function DashboardPage() {
         {/* Right Column (4 cols): AI Action & Activity Timeline */}
         <div className="lg:col-span-4 space-y-6">
           {/* Quick AI Action Card */}
-          <Card dark className="space-y-3.5 border-abyssal-jade/40 shadow-card-jade bg-abyssal-card">
+          <Card dark className="space-y-3.5 border-abyssal-border shadow-card-jade bg-abyssal-card">
             <div className="flex items-center gap-2 text-abyssal-jade text-xs font-mono font-medium">
-              <Sparkles className="w-3.5 h-3.5 text-abyssal-citron" />
+              <Terminal className="w-3.5 h-3.5 text-abyssal-citron" />
               <span>AI Codebase Assistant</span>
             </div>
             <h3 className="text-sm font-semibold text-abyssal-ivory">
@@ -493,7 +492,7 @@ export default function DashboardPage() {
               Ask natural language architectural questions or generate AST tests with full repository context.
             </p>
             <Link to="/chat" className="block pt-1">
-              <Button variant="primary" size="sm" className="w-full shadow-jade-glow" icon={ArrowUpRight}>
+              <Button variant="primary" size="sm" className="w-full" icon={ArrowUpRight}>
                 Start AI Session
               </Button>
             </Link>

@@ -12,7 +12,7 @@ import {
   Activity,
   ArrowRight,
   Clock,
-  Sparkles,
+  Terminal,
   Plus,
   RefreshCw,
   X,
@@ -565,7 +565,7 @@ export default function RepositoryPage() {
 
           <div className="flex items-center gap-2.5">
             <Link to="/chat">
-              <Button variant="secondary" size="sm" icon={Sparkles} className="text-xs">
+              <Button variant="secondary" size="sm" icon={Terminal} className="text-xs">
                 Chat with {activeRepo}
               </Button>
             </Link>
@@ -1129,18 +1129,7 @@ export default function RepositoryPage() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between pt-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setConnectUsername("octocat");
-                        setConnectToken("");
-                      }}
-                      className="text-xs text-slate-400 hover:text-sky-400 font-mono"
-                    >
-                      Use Demo Profile (octocat)
-                    </button>
-
+                  <div className="flex items-center justify-end pt-2">
                     <Button
                       type="submit"
                       variant="primary"

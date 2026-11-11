@@ -13,12 +13,10 @@ import {
   ShieldAlert,
   Hash,
   ExternalLink,
-  GitCommit,
-  Code2
+  GitCommit
 } from "lucide-react";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
-import SourceCodeViewer from "../ui/SourceCodeViewer";
 import { repositoryApi } from "../../services/api";
 
 // LRU / bounded cache for source files (max 30 items)
@@ -38,16 +36,11 @@ export default function NodeDetailsPanel({
   const [sourceFile, setSourceFile] = useState(null);
   const [loadingSource, setLoadingSource] = useState(false);
   const [sourceError, setSourceError] = useState(null);
-  const [targetLine, setTargetLine] = useState(null);
-  const [isViewerExpanded, setIsViewerExpanded] = useState(false);
 
   const activeRequestRef = useRef(0);
 
   // Fetch file content whenever selectedNode or repositoryId or activeBranch changes
   useEffect(() => {
-    // Reset active line and expansion
-    setTargetLine(null);
-    setIsViewerExpanded(false);
 
     // If node is a hub/cluster anchor or has no path, don't fetch source
     if (!selectedNode || selectedNode.isHub || !selectedNode.path || selectedNode.path.endsWith("/")) {
@@ -237,6 +230,41 @@ export default function NodeDetailsPanel({
   const complexityLabel = selectedNode.complexity?.label || "Medium";
   const issues = selectedNode.complexity?.issues || [];
 
+  // Derive estimated total lines if remote source content is not directly available
+  const estimatedLines = (() => {
+    if (selectedNode.symbols && selectedNode.symbols.length > 0) {
+      let maxLine = 0;
+      for (const sym of selectedNode.symbols) {
+        if (sym.lines) {
+          const parts = String(sym.lines).split("-").map((n) => parseInt(n, 10));
+          const end = parts[1] || parts[0];
+          if (!isNaN(end) && end > maxLine) maxLine = end;
+        }
+      }
+      if (maxLine > 0) return maxLine;
+    }
+    if (selectedNode.size && typeof selectedNode.size === "number" && selectedNode.size > 0) {
+      return Math.max(1, Math.round(selectedNode.size / 38));
+    }
+    return null;
+  })();
+
+  const displayTotalLines = (() => {
+    if (loadingSource) {
+      return <span className="text-xs text-sky-400 font-normal animate-pulse">Calculating...</span>;
+    }
+    if (sourceFile?.totalLines !== null && sourceFile?.totalLines !== undefined) {
+      return sourceFile.totalLines.toLocaleString();
+    }
+    if (selectedNode.lines !== null && selectedNode.lines !== undefined && selectedNode.lines > 0) {
+      return selectedNode.lines.toLocaleString();
+    }
+    if (estimatedLines !== null && estimatedLines > 0) {
+      return estimatedLines.toLocaleString();
+    }
+    return selectedNode.lines !== null && selectedNode.lines !== undefined ? selectedNode.lines.toLocaleString() : "Unavailable";
+  })();
+
   return (
     <div className="w-80 sm:w-96 bg-[#0B0F17]/95 backdrop-blur-md border-l border-slate-800 p-5 flex flex-col justify-between h-full text-xs font-mono overflow-y-auto space-y-6">
       <div className="space-y-5">
@@ -296,17 +324,7 @@ export default function NodeDetailsPanel({
           <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 space-y-1">
             <span className="text-[10px] text-slate-500 uppercase block">Total Lines</span>
             <span className="text-lg font-bold text-white">
-              {loadingSource ? (
-                <span className="text-xs text-sky-400 font-normal animate-pulse">Calculating...</span>
-              ) : sourceFile?.totalLines !== null && sourceFile?.totalLines !== undefined ? (
-                sourceFile.totalLines.toLocaleString()
-              ) : selectedNode.lines !== null && selectedNode.lines !== undefined ? (
-                selectedNode.lines.toLocaleString()
-              ) : sourceError ? (
-                <span className="text-xs text-slate-500 font-normal">Unavailable</span>
-              ) : (
-                <span className="text-xs text-slate-500 font-normal">Unavailable</span>
-              )}
+              {displayTotalLines}
             </span>
           </div>
 
@@ -318,67 +336,34 @@ export default function NodeDetailsPanel({
           </div>
         </div>
 
-        {/* Real Source Code Viewer */}
-        {!selectedNode.isHub && selectedNode.path && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-bold">
-                <Code2 className="w-3.5 h-3.5 text-sky-400" />
-                <span>Verified Source Preview</span>
-              </span>
-              {sourceFile?.size !== undefined && (
-                <span className="text-[10px] text-slate-500">
-                  {(sourceFile.size / 1024).toFixed(1)} KB
-                </span>
-              )}
-            </div>
-
-            <SourceCodeViewer
-              file={sourceFile}
-              loading={loadingSource}
-              error={sourceError}
-              onRetry={handleRetryFetch}
-              targetLine={targetLine}
-              isExpanded={isViewerExpanded}
-              onToggleExpand={() => setIsViewerExpanded(!isViewerExpanded)}
-            />
-          </div>
-        )}
-
         {/* AST Symbols Navigation */}
         {selectedNode.symbols && selectedNode.symbols.length > 0 && (
           <div className="space-y-2">
             <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1 font-semibold">
               <Hash className="w-3.5 h-3.5 text-sky-400" />
-              <span>AST Symbols &amp; Jump to Line</span>
+              <span>AST Symbols</span>
             </span>
             <div className="space-y-1">
-              {selectedNode.symbols.map((sym, idx) => {
-                const startLine = sym.lines ? parseInt(sym.lines.split("-")[0], 10) : null;
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      if (startLine) setTargetLine(startLine);
-                    }}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/80 text-left flex items-center justify-between text-[11px] group transition-colors"
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      <span className="text-[9px] px-1 rounded bg-slate-800 text-sky-400 font-mono">
-                        {sym.kind}
-                      </span>
-                      <span className="text-slate-200 group-hover:text-sky-300 font-mono truncate">
-                        {sym.name}
-                      </span>
-                    </div>
-                    {sym.lines && (
-                      <span className="text-[10px] font-mono text-slate-500 group-hover:text-slate-400">
-                        L{sym.lines}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              {selectedNode.symbols.map((sym, idx) => (
+                <div
+                  key={idx}
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900/60 border border-slate-800/80 text-left flex items-center justify-between text-[11px]"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="text-[9px] px-1 rounded bg-slate-800 text-sky-400 font-mono">
+                      {sym.kind}
+                    </span>
+                    <span className="text-slate-200 font-mono truncate">
+                      {sym.name}
+                    </span>
+                  </div>
+                  {sym.lines && (
+                    <span className="text-[10px] font-mono text-slate-500">
+                      L{sym.lines}
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}

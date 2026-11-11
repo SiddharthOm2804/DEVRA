@@ -267,7 +267,7 @@ export default function RegisterPage() {
                 variant="primary"
                 size="md"
                 isLoading={submitting}
-                className="w-full text-xs font-semibold mt-2 shadow-jade-glow"
+                className="w-full text-xs font-semibold mt-2"
                 icon={ArrowRight}
               >
                 Create Account

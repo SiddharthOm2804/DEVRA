@@ -11,7 +11,7 @@ import {
   FileCode,
   RefreshCw,
   Trash2,
-  Sparkles,
+  Terminal,
   ArrowLeft,
   Clock,
   CheckCircle2,
@@ -22,7 +22,6 @@ import {
   Boxes,
   Layers,
   Code2,
-  Terminal,
   Cpu,
   PackageCheck,
   Network,
@@ -424,7 +423,7 @@ export default function RepositoryDetailsPage() {
             </Button>
 
             <Link to="/chat">
-              <Button variant="outline" size="sm" icon={Sparkles}>
+              <Button variant="outline" size="sm" icon={Terminal}>
                 Chat
               </Button>
             </Link>
@@ -579,7 +578,7 @@ export default function RepositoryDetailsPage() {
           {/* 3D Visualizer Banner */}
           <div
             onClick={() => setActiveTab("3d")}
-            className="p-4 rounded-xl bg-gradient-to-r from-sky-500/10 via-purple-500/10 to-transparent border border-sky-500/20 hover:border-sky-500/40 cursor-pointer transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
+            className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-abyssal-jade/40 cursor-pointer transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400 group-hover:scale-105 transition-transform">

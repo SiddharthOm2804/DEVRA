@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Send,
-  Sparkles,
   FolderGit2,
   Plus,
   Terminal,
