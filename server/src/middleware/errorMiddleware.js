@@ -17,7 +17,7 @@ export const errorHandler = (err, req, res, next) => {
   // Mongoose Bad ObjectId (CastError)
   if (err.name === "CastError") {
     statusCode = 404;
-    message = `Resource not found with invalid ID: ${err.value}`;
+    message = "Resource not found.";
   }
 
   // Mongoose Duplicate Key Error (e.g., unique email or repository name)
@@ -44,6 +44,10 @@ export const errorHandler = (err, req, res, next) => {
   if (err.name === "TokenExpiredError") {
     statusCode = 401;
     message = "Authentication token has expired. Please log in again.";
+  }
+
+  if (statusCode >= 500 && process.env.NODE_ENV === "production") {
+    message = "An unexpected error occurred.";
   }
 
   res.status(statusCode).json({

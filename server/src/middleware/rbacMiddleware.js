@@ -98,7 +98,7 @@ export const ROLE_PERMISSIONS_MAP = {
  * Check if a role possesses a specific permission
  */
 export function hasPermission(role, permission) {
-  const allowed = ROLE_PERMISSIONS_MAP[role] || ROLE_PERMISSIONS_MAP[ROLES.DEVELOPER];
+  const allowed = ROLE_PERMISSIONS_MAP[role] || [];
   return allowed.includes(permission);
 }
 
@@ -163,11 +163,11 @@ export function requirePermission(permission) {
       });
     }
 
-    const userRole = req.user.role || ROLES.DEVELOPER;
+    const userRole = req.user.role;
     if (!hasPermission(userRole, permission)) {
       return res.status(403).json({
         success: false,
-        message: `Forbidden. Your role (${userRole}) lacks the required permission: ${permission}.`
+        message: "Forbidden. You do not have access to perform this action."
       });
     }
     next();

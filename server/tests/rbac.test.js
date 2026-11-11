@@ -13,6 +13,7 @@ import {
   requireBranchAccess
 } from "../src/middleware/rbacMiddleware.js";
 import { generateToken } from "../src/utils/jwt.js";
+import { generateReview } from "../src/controllers/reviewController.js";
 
 export async function runRbacTests() {
   console.log("\n=========================================");
@@ -79,10 +80,14 @@ export async function runRbacTests() {
     assert.strictEqual(hasPermission(ROLES.DEVELOPER, PERMISSIONS.AGENT_PLAN), true);
     assert.strictEqual(hasPermission(ROLES.DEVELOPER, PERMISSIONS.AGENT_APPLY), true);
     assert.strictEqual(hasPermission(ROLES.DEVELOPER, PERMISSIONS.ANALYSIS_TRIGGER), true);
+    assert.strictEqual(hasPermission(ROLES.DEVELOPER, PERMISSIONS.REVIEW_READ), true);
+    assert.strictEqual(hasPermission(ROLES.DEVELOPER, PERMISSIONS.REVIEW_TRIGGER), false);
     assert.strictEqual(hasPermission(ROLES.DEVELOPER, PERMISSIONS.USER_MANAGE), false);
     assert.strictEqual(hasPermission(ROLES.DEVELOPER, PERMISSIONS.REPO_DELETE), false);
 
     assert.strictEqual(hasPermission(ROLES.GUEST, PERMISSIONS.REPO_READ), true);
+    assert.strictEqual(hasPermission(ROLES.GUEST, PERMISSIONS.REVIEW_READ), true);
+    assert.strictEqual(hasPermission(ROLES.GUEST, PERMISSIONS.REVIEW_TRIGGER), false);
     assert.strictEqual(hasPermission(ROLES.GUEST, PERMISSIONS.RAG_SEARCH), true);
     assert.strictEqual(hasPermission(ROLES.GUEST, PERMISSIONS.REPO_CREATE), false);
     assert.strictEqual(hasPermission(ROLES.GUEST, PERMISSIONS.REPO_DELETE), false);
@@ -100,6 +105,21 @@ export async function runRbacTests() {
     assert.strictEqual(res.statusCode, 401);
     assert.strictEqual(res.jsonData.success, false);
     assert.ok(res.jsonData.message.includes("Access denied"));
+  });
+
+  test("review trigger is restricted to architects and admins", () => {
+    for (const role of [ROLES.ARCHITECT, ROLES.ADMIN]) {
+      const { req, res, next, isNextCalled } = createMockReqRes({ user: { _id: "user-1", role } });
+      requirePermission(PERMISSIONS.REVIEW_TRIGGER)(req, res, next);
+      assert.strictEqual(isNextCalled(), true);
+    }
+    for (const role of [ROLES.DEVELOPER, ROLES.GUEST]) {
+      const { req, res, next, isNextCalled } = createMockReqRes({ user: { _id: "user-1", role } });
+      requirePermission(PERMISSIONS.REVIEW_TRIGGER)(req, res, next);
+      assert.strictEqual(isNextCalled(), false);
+      assert.strictEqual(res.statusCode, 403);
+      assert.strictEqual(res.jsonData.message.includes(PERMISSIONS.REVIEW_TRIGGER), false);
+    }
   });
 
   // 3. Guest Role Restriction (HTTP 403)
@@ -237,6 +257,23 @@ export async function runRbacTests() {
       assert.strictEqual(res.statusCode, 403, "Expected 403 Forbidden");
     } finally {
       AgentSession.findById = origFindById;
+    }
+  });
+
+  await test("Review generation rejects an inaccessible repository before invoking AI", async () => {
+    const originalFindOne = Repository.findOne;
+    const { req, res, next } = createMockReqRes({
+      user: { _id: "64f1a2b3c4d5e6f7a8b9c001", role: ROLES.ADMIN },
+      body: { repositoryId: "64f1a2b3c4d5e6f7a8b9c099", code: "const value = 1;" }
+    });
+    Repository.findOne = async () => null;
+
+    try {
+      await generateReview(req, res, next);
+      assert.strictEqual(res.statusCode, 404);
+      assert.strictEqual(res.jsonData.message, "Repository not found or unavailable.");
+    } finally {
+      Repository.findOne = originalFindOne;
     }
   });
 

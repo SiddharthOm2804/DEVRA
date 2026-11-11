@@ -15,7 +15,7 @@ export const apiClient = axios.create({
 // Request Interceptor: Attach JWT Bearer Token if available
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("devra_token");
+    const token = localStorage.getItem("devra_token") || sessionStorage.getItem("devra_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

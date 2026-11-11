@@ -41,4 +41,22 @@ test.describe("AI Code Review and GitHub Webhook Visibility Workflows", () => {
     // Verify findings callout
     await expect(page.getByText(/Zero critical security vulnerabilities|Function complexity/i).first()).toBeVisible();
   });
+
+  test("Developer can view reviews but cannot trigger one", async ({ page }) => {
+    await setupDeterministicMockApi(page, TEST_USERS.DEVELOPER);
+    await authenticateSession(page, TEST_USERS.DEVELOPER, "/reviews");
+
+    await expect(page.getByRole("heading", { name: /AI Code Review Engine/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /New Code Review/i })).toHaveCount(0);
+    await expect(page.getByRole("note")).toContainText("developer account can view code reviews but cannot start one");
+  });
+
+  test("Guest can view reviews but cannot trigger one", async ({ page }) => {
+    await setupDeterministicMockApi(page, TEST_USERS.GUEST);
+    await authenticateSession(page, TEST_USERS.GUEST, "/reviews");
+
+    await expect(page.getByRole("heading", { name: /AI Code Review Engine/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /New Code Review/i })).toHaveCount(0);
+    await expect(page.getByRole("note")).toContainText("guest account can view code reviews but cannot start one");
+  });
 });

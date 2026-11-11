@@ -122,7 +122,8 @@ export async function processPayment(payload: PaymentPayload): Promise<{ transac
 ];
 
 export default function CodeReviewPage() {
-  const { activeRepo } = useAuth();
+  const { activeRepo, permissions, user } = useAuth();
+  const canTriggerReview = permissions.includes("review:trigger");
   const [reviews, setReviews] = useState([]);
   const [selectedReview, setSelectedReview] = useState(null);
   const [repositories, setRepositories] = useState([]);
@@ -343,14 +344,14 @@ export default function CodeReviewPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button
+          {canTriggerReview && <Button
             onClick={() => setShowInputModal(!showInputModal)}
             variant={showInputModal ? "secondary" : "primary"}
             size="sm"
             icon={Plus}
           >
             {showInputModal ? "Close Review Creator" : "New Code Review"}
-          </Button>
+          </Button>}
 
           <Button
             onClick={fetchHistory}
@@ -364,8 +365,14 @@ export default function CodeReviewPage() {
         </div>
       </div>
 
+      {!canTriggerReview && (
+        <div role="note" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Your {user?.role || "current"} account can view code reviews but cannot start one. Review triggering is limited to architects and admins.
+        </div>
+      )}
+
       {/* NEW REVIEW CREATOR / INPUT ACCORDION */}
-      {showInputModal && (
+      {showInputModal && canTriggerReview && (
         <Card className="bg-white border-slate-200 shadow-card-sm space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2 text-brand-lavender font-mono text-xs font-bold uppercase">

@@ -31,6 +31,12 @@ export const generateReview = async (req, res, next) => {
         _id: repositoryId,
         userId: req.user._id
       });
+      if (!repoDoc) {
+        return res.status(404).json({
+          success: false,
+          message: "Repository not found or unavailable."
+        });
+      }
     }
 
     // Run AI review and validate output

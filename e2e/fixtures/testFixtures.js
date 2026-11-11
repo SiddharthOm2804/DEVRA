@@ -58,6 +58,13 @@ export const TEST_USERS = {
   ADMIN: { ...rawAdmin, token: createTestToken(rawAdmin) }
 };
 
+const TEST_ROLE_PERMISSIONS = {
+  admin: ["review:read", "review:trigger", "review:delete"],
+  architect: ["review:read", "review:trigger", "review:delete"],
+  developer: ["review:read"],
+  guest: ["review:read"]
+};
+
 export const MOCK_REPOSITORIES = [
   {
     _id: "repo-core-01",
@@ -188,7 +195,8 @@ export async function setupDeterministicMockApi(page, user = TEST_USERS.ARCHITEC
           email: user.email,
           role: user.role,
           organization: user.organization
-        }
+        },
+        permissions: TEST_ROLE_PERMISSIONS[user.role] || []
       })
     });
   });

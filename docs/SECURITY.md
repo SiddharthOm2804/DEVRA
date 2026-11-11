@@ -35,7 +35,22 @@ All structured server logs pass through sanitization middleware (`logger.js`). S
 
 ---
 
-## 3. Reporting Security Vulnerabilities
+## 3. Role-Based Review Permissions
+
+Review endpoints authenticate the user before checking the permission associated with each action. The role permission map is authoritative and is evaluated against the current user record loaded from the database; JWT role claims and client-cached role data do not grant access.
+
+| Action | Admin | Architect | Developer | Guest |
+| --- | --- | --- | --- | --- |
+| View reviews and results | Yes | Yes | Yes | Yes |
+| Configure and trigger an AI review | Yes | Yes | No | No |
+| Delete reviews | Yes | Yes | No | No |
+| Generate/apply agent changes | Yes | Yes | Yes | No |
+| Approve agent changes | Yes | Yes | Yes | No |
+| Approve or merge repository changes | No automated merge endpoint | No automated merge endpoint | No automated merge endpoint | No automated merge endpoint |
+
+An authenticated user may trigger a review only if their account owns the selected repository. A missing or inaccessible repository is rejected; it is never silently treated as a standalone snippet review. Standalone snippets can be submitted without a repository association only by a role allowed to trigger reviews.
+
+## 4. Reporting Security Vulnerabilities
 
 We take the security of DEVRA seriously. If you discover a vulnerability, please report it responsibly:
 

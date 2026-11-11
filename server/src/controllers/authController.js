@@ -5,6 +5,7 @@ import { config } from "../config/env.js";
 import * as githubService from "../services/githubService.js";
 import { emailService } from "../services/emailService.js";
 import { ticketStore } from "../utils/ticketStore.js";
+import { ROLE_PERMISSIONS_MAP } from "../middleware/rbacMiddleware.js";
 
 const encodeGithubOAuthState = (payload) => {
   const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
@@ -184,7 +185,8 @@ export const getMe = async (req, res, next) => {
   try {
     res.status(200).json({
       success: true,
-      user: req.user
+      user: req.user,
+      permissions: ROLE_PERMISSIONS_MAP[req.user.role] || []
     });
   } catch (error) {
     next(error);

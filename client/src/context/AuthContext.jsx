@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
     const saved = localStorage.getItem("devra_user");
     return saved ? JSON.parse(saved) : null;
   });
+  const [permissions, setPermissions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeRepo, setActiveRepo] = useState("devra-core");
@@ -62,6 +63,7 @@ export function AuthProvider({ children }) {
         const response = await authApi.getMe();
         if (response.success && response.user) {
           setUser(response.user);
+          setPermissions(response.permissions || []);
           localStorage.setItem("devra_user", JSON.stringify(response.user));
           setToken(effectiveToken);
         }
@@ -90,14 +92,24 @@ export function AuthProvider({ children }) {
       const response = await authApi.getMe();
       if (response.success && response.user) {
         setUser(response.user);
+        setPermissions(response.permissions || []);
         localStorage.setItem("devra_user", JSON.stringify(response.user));
         return response.user;
       }
     } catch (err) {
       console.warn("[Auth] Failed to refresh user profile:", err.message);
+      setPermissions([]);
     }
     return null;
   };
+
+  useEffect(() => {
+    const refreshOnFocus = () => {
+      if (localStorage.getItem("devra_token") || sessionStorage.getItem("devra_token")) refreshUser();
+    };
+    window.addEventListener("focus", refreshOnFocus);
+    return () => window.removeEventListener("focus", refreshOnFocus);
+  }, []);
 
   // Helper for friendly error messages
   const formatAuthError = (err, defaultMsg = "Something went wrong. Please try again.") => {
@@ -122,7 +134,6 @@ export function AuthProvider({ children }) {
       const data = await authApi.login({ email, password });
       if (data.success && data.token) {
         setToken(data.token);
-        setUser(data.user);
         if (rememberMe) {
           localStorage.setItem("devra_token", data.token);
           localStorage.setItem("devra_user", JSON.stringify(data.user));
@@ -132,6 +143,11 @@ export function AuthProvider({ children }) {
           localStorage.setItem("devra_user", JSON.stringify(data.user));
           localStorage.removeItem("devra_token");
         }
+        const profile = await authApi.getMe();
+        const currentUser = profile.user || data.user;
+        setUser(currentUser);
+        setPermissions(profile.permissions || []);
+        localStorage.setItem("devra_user", JSON.stringify(currentUser));
         return { success: true };
       }
       const friendlyMsg = data.message || "Invalid email or password.";
@@ -185,9 +201,12 @@ export function AuthProvider({ children }) {
       const data = await authApi.register(userData);
       if (data.success && data.token) {
         setToken(data.token);
-        setUser(data.user);
         localStorage.setItem("devra_token", data.token);
-        localStorage.setItem("devra_user", JSON.stringify(data.user));
+        const profile = await authApi.getMe();
+        const currentUser = profile.user || data.user;
+        setUser(currentUser);
+        setPermissions(profile.permissions || []);
+        localStorage.setItem("devra_user", JSON.stringify(currentUser));
         return { success: true };
       }
       const msg = data.message || "Unable to create account. Please try again.";
@@ -212,6 +231,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem("devra_user");
       setToken(null);
       setUser(null);
+      setPermissions([]);
       setError(null);
     }
   };
@@ -221,6 +241,7 @@ export function AuthProvider({ children }) {
       value={{
         token,
         user,
+        permissions,
         isAuthenticated: !!token && !!user,
         isLoading,
         error,
